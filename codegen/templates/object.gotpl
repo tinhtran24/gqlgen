@@ -33,7 +33,7 @@ func (ec *executionContext) _{{$object.GQLType}}(ctx context.Context, sel ast.Se
 	{{end}}
 
 	type objectFieldResolver struct {
-    	resolverFunc func(context.Context, graphql.CollectedField{{if not $object.Root}}, obj *{{$object.FullName}}{{end}})
+    	resolverFunc func(context.Context, graphql.CollectedField{{if not $object.Root}}, *{{$object.FullName}}{{end}})
     	isConcurrent bool
     }
 
