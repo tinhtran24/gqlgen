@@ -1,5 +1,5 @@
 //go:generate rm -f resolver.go
-//go:generate gorunpkg github.com/99designs/gqlgen
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package testserver
 
@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/jlightning/gqlgen/graphql/introspection"
 
-	"github.com/99designs/gqlgen/client"
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/handler"
+	"github.com/jlightning/gqlgen/client"
+	"github.com/jlightning/gqlgen/graphql"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

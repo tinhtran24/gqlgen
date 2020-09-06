@@ -1,4 +1,4 @@
-//go:generate gorunpkg github.com/99designs/gqlgen
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package integration
 
@@ -8,7 +8,7 @@ import (
 	"remote_api"
 	"time"
 
-	"github.com/99designs/gqlgen/integration/models-go"
+	"github.com/jlightning/gqlgen/integration/models-go"
 )
 
 type CustomError struct {

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/99designs/gqlgen/example/type-system-extension"
-	"github.com/99designs/gqlgen/handler"
+	"github.com/jlightning/gqlgen/example/type-system-extension"
+	"github.com/jlightning/gqlgen/handler"
 )
 
 const defaultPort = "8080"

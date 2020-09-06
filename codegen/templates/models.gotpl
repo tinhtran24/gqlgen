@@ -16,8 +16,8 @@ import (
 
 	{{ reserveImport "github.com/vektah/gqlparser" }}
 	{{ reserveImport "github.com/vektah/gqlparser/ast" }}
-	{{ reserveImport "github.com/99designs/gqlgen/graphql" }}
-	{{ reserveImport "github.com/99designs/gqlgen/graphql/introspection" }}
+	{{ reserveImport "github.com/jlightning/gqlgen/graphql" }}
+	{{ reserveImport "github.com/jlightning/gqlgen/graphql/introspection" }}
 )
 
 {{ range $model := .Models }}

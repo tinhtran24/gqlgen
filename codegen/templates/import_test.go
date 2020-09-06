@@ -11,9 +11,9 @@ func TestImports(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	aBar := "github.com/99designs/gqlgen/codegen/templates/testdata/a/bar"
-	bBar := "github.com/99designs/gqlgen/codegen/templates/testdata/b/bar"
-	mismatch := "github.com/99designs/gqlgen/codegen/templates/testdata/pkg_mismatch"
+	aBar := "github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
+	bBar := "github.com/jlightning/gqlgen/codegen/templates/testdata/b/bar"
+	mismatch := "github.com/jlightning/gqlgen/codegen/templates/testdata/pkg_mismatch"
 
 	t.Run("multiple lookups is ok", func(t *testing.T) {
 		a := Imports{destDir: wd}
@@ -47,7 +47,7 @@ func TestImports(t *testing.T) {
 
 		require.Equal(
 			t,
-			`"github.com/99designs/gqlgen/codegen/templates/testdata/a/bar"
+			`"github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
 bar1 "github.com/99designs/gqlgen/codegen/templates/testdata/b/bar"
 "github.com/99designs/gqlgen/codegen/templates/testdata/pkg_mismatch"`,
 			a.String(),
