@@ -5,7 +5,7 @@ import (
 	"go/build"
 	"strconv"
 
-	"github.com/99designs/gqlgen/internal/gopath"
+	"github.com/jlightning/gqlgen/internal/gopath"
 )
 
 type Import struct {
