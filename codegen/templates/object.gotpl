@@ -33,7 +33,7 @@ func (ec *executionContext) _{{$object.GQLType}}(ctx context.Context, sel ast.Se
 	{{end}}
 
 	type objectFieldResolver struct {
-    	resolverFunc func(context.Context, graphql.CollectedField, {{if not $object.Root}}obj *{{$object.FullName}}{{end}})
+    	resolverFunc func(context.Context, graphql.CollectedField{{if not $object.Root}}, obj *{{$object.FullName}}{{end}})
     	isConcurrent bool
     }
 
@@ -49,27 +49,11 @@ func (ec *executionContext) _{{$object.GQLType}}(ctx context.Context, sel ast.Se
 	for i, field := range fields {
 		out.Keys[i] = field.Alias
 
-		switch field.Name {
-		case "__typename":
+		if field.Name == "__typename" {
 			out.Values[i] = graphql.MarshalString({{$object.GQLType|quote}})
-		{{- range $field := $object.Fields }}
-		case "{{$field.GQLName}}":
-			{{- if $field.IsConcurrent }}
-				wg.Add(1)
-				go func(i int, field graphql.CollectedField) {
-			{{- end }}
-				out.Values[i] = ec._{{$object.GQLType}}_{{$field.GQLName}}(ctx, field{{if not $object.Root}}, obj{{end}})
-				{{- if $field.ASTType.NonNull }}
-					if out.Values[i] == graphql.Null {
-						invalid = true
-					}
-				{{- end }}
-			{{- if $field.IsConcurrent }}
-					wg.Done()
-				}(i, field)
-			{{- end }}
-		{{- end }}
-		default:
+		} else if resolver, ok := allResolvers[field.Name]; ok {
+			out.Values[i] = ec._{{$object.GQLType}}_{{$field.GQLName}}(ctx, field{{if not $object.Root}}, obj{{end}})
+		} else {
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
