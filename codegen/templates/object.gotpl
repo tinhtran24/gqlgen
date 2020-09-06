@@ -52,7 +52,7 @@ func (ec *executionContext) _{{$object.GQLType}}(ctx context.Context, sel ast.Se
 		if field.Name == "__typename" {
 			out.Values[i] = graphql.MarshalString({{$object.GQLType|quote}})
 		} else if resolver, ok := allResolvers[field.Name]; ok {
-			out.Values[i] = ec._{{$object.GQLType}}_{{$field.GQLName}}(ctx, field{{if not $object.Root}}, obj{{end}})
+			out.Values[i] = resolver.resolverFunc(ctx, field{{if not $object.Root}}, obj{{end}})
 		} else {
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
