@@ -2,6 +2,38 @@
 
 
 [[projects]]
+  digest = "1:45c2268e2e15baac1ee429dd64084bee37871ae06e528510536da417bbdf6772"
+  name = "github.com/99designs/gqlgen"
+  packages = [
+    "client",
+    "cmd",
+    "codegen",
+    "codegen/templates",
+    "codegen/testserver/introspection",
+    "codegen/testserver/invalid-packagename",
+    "complexity",
+    "example/chat",
+    "example/config",
+    "example/dataloader",
+    "example/scalars",
+    "example/scalars/model",
+    "example/selection",
+    "example/starwars",
+    "example/todo",
+    "example/type-system-extension",
+    "graphql",
+    "graphql/introspection",
+    "handler",
+    "integration",
+    "integration/models-go",
+    "internal/gopath",
+    "internal/imports",
+  ]
+  pruneopts = "UT"
+  revision = "da1e07f5876c0fb79cbad19006f7135be08590d6"
+  version = "v0.7.2"
+
+[[projects]]
   branch = "master"
   digest = "1:99b2e09d42b4d0929e9e6ac496922f5221baa79b60968576d5ce310b44640c3b"
   name = "github.com/agnivade/levenshtein"
@@ -242,6 +274,29 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/99designs/gqlgen/client",
+    "github.com/99designs/gqlgen/cmd",
+    "github.com/99designs/gqlgen/codegen",
+    "github.com/99designs/gqlgen/codegen/templates",
+    "github.com/99designs/gqlgen/codegen/testserver/introspection",
+    "github.com/99designs/gqlgen/codegen/testserver/invalid-packagename",
+    "github.com/99designs/gqlgen/complexity",
+    "github.com/99designs/gqlgen/example/chat",
+    "github.com/99designs/gqlgen/example/config",
+    "github.com/99designs/gqlgen/example/dataloader",
+    "github.com/99designs/gqlgen/example/scalars",
+    "github.com/99designs/gqlgen/example/scalars/model",
+    "github.com/99designs/gqlgen/example/selection",
+    "github.com/99designs/gqlgen/example/starwars",
+    "github.com/99designs/gqlgen/example/todo",
+    "github.com/99designs/gqlgen/example/type-system-extension",
+    "github.com/99designs/gqlgen/graphql",
+    "github.com/99designs/gqlgen/graphql/introspection",
+    "github.com/99designs/gqlgen/handler",
+    "github.com/99designs/gqlgen/integration",
+    "github.com/99designs/gqlgen/integration/models-go",
+    "github.com/99designs/gqlgen/internal/gopath",
+    "github.com/99designs/gqlgen/internal/imports",
     "github.com/go-chi/chi",
     "github.com/gorilla/websocket",
     "github.com/hashicorp/golang-lru",
