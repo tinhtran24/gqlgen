@@ -57,7 +57,7 @@ models:
 
 ## Custom scalars for types you don't control
 
-Sometimes you cant add methods to a type because its in another repo, part of the standard 
+Sometimes you cant add methods to a type because its in another repo, part of the standard
 library (eg string or time.Time). To do this we can build an external marshaler:
 
 ```go
@@ -67,8 +67,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	
-	"github.com/99designs/gqlgen/graphql"
+
+	"github.com/jlightning/gqlgen/graphql"
 )
 
 
@@ -103,4 +103,4 @@ models:
     model: github.com/me/mypkg.MyCustomBooleanScalar
 ```
 
-see the [example/scalars](https://github.com/99designs/gqlgen/tree/master/example/scalars) package for more examples.
+see the [example/scalars](https://github.com/jlightning/gqlgen/tree/master/example/scalars) package for more examples.

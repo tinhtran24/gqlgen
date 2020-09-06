@@ -77,8 +77,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/99designs/gqlgen/example/starwars"
-	"github.com/99designs/gqlgen/handler"
+	"github.com/jlightning/gqlgen/example/starwars"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/go-chi/chi"
 )
 
@@ -120,7 +120,7 @@ Things are different with websockets, and if you do things in the vein of the ab
 // ForContext finds the user from the context. REQUIRES Middleware to have run.
 func ForContext(ctx context.Context) *User {
   raw, ok := ctx.Value(userCtxKey).(*User)
-  
+
   if !ok {
     payload := handler.GetInitPayload(ctx)
     if payload == nil {

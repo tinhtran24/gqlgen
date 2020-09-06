@@ -3,7 +3,7 @@
 
 [[projects]]
   digest = "1:45c2268e2e15baac1ee429dd64084bee37871ae06e528510536da417bbdf6772"
-  name = "github.com/99designs/gqlgen"
+  name = "github.com/jlightning/gqlgen"
   packages = [
     "client",
     "cmd",
@@ -274,27 +274,27 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/99designs/gqlgen/client",
-    "github.com/99designs/gqlgen/cmd",
-    "github.com/99designs/gqlgen/codegen",
-    "github.com/99designs/gqlgen/codegen/templates",
-    "github.com/99designs/gqlgen/codegen/testserver/introspection",
-    "github.com/99designs/gqlgen/codegen/testserver/invalid-packagename",
-    "github.com/99designs/gqlgen/complexity",
-    "github.com/99designs/gqlgen/example/chat",
-    "github.com/99designs/gqlgen/example/config",
-    "github.com/99designs/gqlgen/example/dataloader",
-    "github.com/99designs/gqlgen/example/scalars",
-    "github.com/99designs/gqlgen/example/scalars/model",
-    "github.com/99designs/gqlgen/example/selection",
-    "github.com/99designs/gqlgen/example/starwars",
-    "github.com/99designs/gqlgen/example/todo",
-    "github.com/99designs/gqlgen/example/type-system-extension",
-    "github.com/99designs/gqlgen/graphql",
-    "github.com/99designs/gqlgen/graphql/introspection",
-    "github.com/99designs/gqlgen/handler",
-    "github.com/99designs/gqlgen/integration",
-    "github.com/99designs/gqlgen/integration/models-go",
+    "github.com/jlightning/gqlgen/client",
+    "github.com/jlightning/gqlgen/cmd",
+    "github.com/jlightning/gqlgen/codegen",
+    "github.com/jlightning/gqlgen/codegen/templates",
+    "github.com/jlightning/gqlgen/codegen/testserver/introspection",
+    "github.com/jlightning/gqlgen/codegen/testserver/invalid-packagename",
+    "github.com/jlightning/gqlgen/complexity",
+    "github.com/jlightning/gqlgen/example/chat",
+    "github.com/jlightning/gqlgen/example/config",
+    "github.com/jlightning/gqlgen/example/dataloader",
+    "github.com/jlightning/gqlgen/example/scalars",
+    "github.com/jlightning/gqlgen/example/scalars/model",
+    "github.com/jlightning/gqlgen/example/selection",
+    "github.com/jlightning/gqlgen/example/starwars",
+    "github.com/jlightning/gqlgen/example/todo",
+    "github.com/jlightning/gqlgen/example/type-system-extension",
+    "github.com/jlightning/gqlgen/graphql",
+    "github.com/jlightning/gqlgen/graphql/introspection",
+    "github.com/jlightning/gqlgen/handler",
+    "github.com/jlightning/gqlgen/integration",
+    "github.com/jlightning/gqlgen/integration/models-go",
     "github.com/jlightning/gqlgen/internal/gopath",
     "github.com/jlightning/gqlgen/internal/imports",
     "github.com/go-chi/chi",

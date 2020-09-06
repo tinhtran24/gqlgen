@@ -48,8 +48,8 @@ func TestImports(t *testing.T) {
 		require.Equal(
 			t,
 			`"github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
-bar1 "github.com/99designs/gqlgen/codegen/templates/testdata/b/bar"
-"github.com/99designs/gqlgen/codegen/templates/testdata/pkg_mismatch"`,
+bar1 "github.com/jlightning/gqlgen/codegen/templates/testdata/b/bar"
+"github.com/jlightning/gqlgen/codegen/templates/testdata/pkg_mismatch"`,
 			a.String(),
 		)
 	})
@@ -80,7 +80,7 @@ bar1 "github.com/99designs/gqlgen/codegen/templates/testdata/b/bar"
 		a.Reserve(aBar, "abar")
 		a.Reserve(bBar, "bbar")
 
-		require.Equal(t, `abar "github.com/99designs/gqlgen/codegen/templates/testdata/a/bar"
-bbar "github.com/99designs/gqlgen/codegen/templates/testdata/b/bar"`, a.String())
+		require.Equal(t, `abar "github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
+bbar "github.com/jlightning/gqlgen/codegen/templates/testdata/b/bar"`, a.String())
 	})
 }

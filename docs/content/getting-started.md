@@ -1,7 +1,7 @@
 ---
 linkTitle: Getting Started
 title: Building GraphQL servers in golang
-description: Get started building type-safe GraphQL servers in Golang using gqlgen  
+description: Get started building type-safe GraphQL servers in Golang using gqlgen
 menu: main
 weight: -5
 ---
@@ -35,7 +35,7 @@ Add the following file to your project under `scripts/gqlgen.go`:
 
 package main
 
-import "github.com/99designs/gqlgen/cmd"
+import "github.com/jlightning/gqlgen/cmd"
 
 func main() {
 	cmd.Execute()
@@ -52,7 +52,7 @@ $ dep init
 
 ### Define the schema
 
-gqlgen is a schema-first library — before writing code, you describe your API using the GraphQL 
+gqlgen is a schema-first library — before writing code, you describe your API using the GraphQL
 [Schema Definition Language](http://graphql.org/learn/schema/). This usually goes into a file called `schema.graphql`:
 
 ```graphql
@@ -93,7 +93,7 @@ This has created an empty skeleton with all files you need:
  - `gqlgen.yml` — The gqlgen config file, knobs for controlling the generated code.
  - `generated.go` — The GraphQL execution runtime, the bulk of the generated code.
  - `models_gen.go` — Generated models required to build the graph. Often you will override these with your own models. Still very useful for input types.
- - `resolver.go` — This is where your application code lives. `generated.go` will call into this to get the data the user has requested. 
+ - `resolver.go` — This is where your application code lives. `generated.go` will call into this to get the data the user has requested.
  - `server/server.go` — This is a minimal entry point that sets up an `http.Handler` to the generated GraphQL server.
 
  Now run dep ensure, so that we can ensure that the newly generated code's dependencies are all present:
@@ -101,7 +101,7 @@ This has created an empty skeleton with all files you need:
  ```sh
  $ dep ensure
  ```
- 
+
 ### Create the database models
 
 The generated model for Todo isn't right, it has a user embeded in it but we only want to fetch it if the user actually requested it. So instead lets make a new model in `todo.go`:
@@ -179,7 +179,7 @@ type TodoResolver interface {
 Notice the `TodoResolver.User` method? Thats gqlgen saying "I dont know how to get a User from a Todo, you tell me.".
 Its worked out how to build everything else for us.
 
-For any missing models (like NewTodo) gqlgen will generate a go struct. This is usually only used for input types and 
+For any missing models (like NewTodo) gqlgen will generate a go struct. This is usually only used for input types and
 one-off return values. Most of the time your types will be coming from the database, or an API client so binding is
 better than generating.
 
