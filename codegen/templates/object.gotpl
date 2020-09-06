@@ -39,7 +39,7 @@ func (ec *executionContext) _{{$object.GQLType}}(ctx context.Context, sel ast.Se
 
     allResolvers := map[string]*objectFieldResolver{
     	{{- range $field := $object.Fields }}
-    	"{{$field.GQLName}}": &objectFieldResolver{resolver: ec._{{$object.GQLType}}_{{$field.GQLName}}{{- if $field.IsConcurrent -}}, isConcurrent: true{{- end -}}}
+    	"{{$field.GQLName}}": &objectFieldResolver{resolver: ec._{{$object.GQLType}}_{{$field.GQLName}}{{- if $field.IsConcurrent -}}, isConcurrent: true{{- end -}}},
     	{{- end }}
     }
 
