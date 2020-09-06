@@ -32,6 +32,17 @@ func (ec *executionContext) _{{$object.GQLType}}(ctx context.Context, sel ast.Se
 		})
 	{{end}}
 
+	type objectFieldResolver struct {
+    	resolverFunc func(context.Context, graphql.CollectedField, {{if not $object.Root}}obj *{{$object.FullName}}{{end}})
+    	isConcurrent bool
+    }
+
+    allResolvers := map[string]*objectFieldResolver{
+    	{{- range $field := $object.Fields }}
+    	"{{$field.GQLName}}": &objectFieldResolver{resolver: ec._{{$object.GQLType}}_{{$field.GQLName}}{{- if $field.IsConcurrent -}}, isConcurrent: true{{- end -}}}
+    	{{- end }}
+    }
+
 	{{if $object.IsConcurrent}} var wg sync.WaitGroup {{end}}
 	out := graphql.NewOrderedMap(len(fields))
 	invalid := false
