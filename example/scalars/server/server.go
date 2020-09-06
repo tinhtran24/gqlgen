@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/99designs/gqlgen/example/scalars"
-	"github.com/99designs/gqlgen/handler"
+	"github.com/jlightning/gqlgen/example/scalars"
+	"github.com/jlightning/gqlgen/handler"
 )
 
 func main() {
