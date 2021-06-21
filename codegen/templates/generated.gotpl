@@ -25,14 +25,12 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 	return &executableSchema{
 		resolvers: cfg.Resolvers,
 		directives: cfg.Directives,
-		complexity: cfg.Complexity,
 	}
 }
 
 type Config struct {
 	Resolvers  ResolverRoot
 	Directives DirectiveRoot
-	Complexity ComplexityRoot
 }
 
 type ResolverRoot interface {
@@ -46,20 +44,6 @@ type ResolverRoot interface {
 type DirectiveRoot struct {
 {{ range $directive := .Directives }}
 	{{ $directive.Declaration }}
-{{ end }}
-}
-
-type ComplexityRoot struct {
-{{ range $object := .Objects }}
-	{{ if not $object.IsReserved -}}
-		{{ $object.GQLType|toCamel }} struct {
-		{{ range $field := $object.Fields -}}
-			{{ if not $field.IsReserved -}}
-				{{ $field.GQLName|toCamel }} {{ $field.ComplexitySignature }}
-			{{ end }}
-		{{- end }}
-		}
-	{{- end }}
 {{ end }}
 }
 
@@ -94,36 +78,10 @@ type ComplexityRoot struct {
 type executableSchema struct {
 	resolvers  ResolverRoot
 	directives DirectiveRoot
-	complexity ComplexityRoot
 }
 
 func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
-}
-
-func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]interface{}) (int, bool) {
-	switch typeName + "." + field {
-	{{ range $object := .Objects }}
-		{{ if not $object.IsReserved }}
-			{{ range $field := $object.Fields }}
-				{{ if not $field.IsReserved }}
-					case "{{$object.GQLType}}.{{$field.GQLName}}":
-						if e.complexity.{{$object.GQLType|toCamel}}.{{$field.GQLName|toCamel}} == nil {
-							break
-						}
-						{{ if $field.Args }}
-							args, err := {{ $field.ArgsFunc }}(rawArgs)
-							if err != nil {
-								return 0, false
-							}
-						{{ end }}
-						return e.complexity.{{$object.GQLType|toCamel}}.{{$field.GQLName|toCamel}}(childComplexity{{if $field.Args}}, {{$field.ComplexityArgs}} {{end}}), true
-				{{ end }}
-			{{ end }}
-		{{ end }}
-	{{ end }}
-	}
-	return 0, false
 }
 
 func (e *executableSchema) Query(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
