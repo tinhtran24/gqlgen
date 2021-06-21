@@ -84,6 +84,10 @@ func (e *executableSchema) Schema() *ast.Schema {
 	return parsedSchema
 }
 
+func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]interface{}) (int, bool) {
+	return 0, false
+}
+
 func (e *executableSchema) Query(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
 	{{- if .QueryRoot }}
 		ec := executionContext{graphql.GetRequestContext(ctx), e}
