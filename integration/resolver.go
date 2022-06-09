@@ -1,14 +1,14 @@
-//go:generate go run ../testdata/gqlgen.go
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package integration
 
 import (
 	"context"
 	"fmt"
+	"remote_api"
 	"time"
 
-	models "github.com/tinhtran24/gqlgen/integration/models-go"
-	"github.com/tinhtran24/gqlgen/integration/remote_api"
+	"github.com/jlightning/gqlgen/integration/models-go"
 )
 
 type CustomError struct {
@@ -47,8 +47,8 @@ func (r *elementResolver) Mismatched(ctx context.Context, obj *models.Element) (
 	return []bool{true}, nil
 }
 
-func (r *elementResolver) Child(ctx context.Context, obj *models.Element) (*models.Element, error) {
-	return &models.Element{ID: obj.ID * 10}, nil
+func (r *elementResolver) Child(ctx context.Context, obj *models.Element) (models.Element, error) {
+	return models.Element{ID: obj.ID * 10}, nil
 }
 
 type queryResolver struct{ *Resolver }
@@ -58,11 +58,11 @@ func (r *queryResolver) Error(ctx context.Context, typeArg *models.ErrorType) (b
 		return false, &CustomError{"User message", "Internal Message"}
 	}
 
-	return false, fmt.Errorf("normal error")
+	return false, fmt.Errorf("Normal error")
 }
 
 func (r *queryResolver) Path(ctx context.Context) ([]*models.Element, error) {
-	return []*models.Element{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}}, nil
+	return []*models.Element{{1}, {2}, {3}, {4}}, nil
 }
 
 func (r *queryResolver) Date(ctx context.Context, filter models.DateFilter) (bool, error) {
@@ -89,10 +89,6 @@ func (r *queryResolver) Viewer(ctx context.Context) (*models.Viewer, error) {
 
 func (r *queryResolver) JSONEncoding(ctx context.Context) (string, error) {
 	return "\U000fe4ed", nil
-}
-
-func (r *queryResolver) Complexity(ctx context.Context, value int) (bool, error) {
-	return true, nil
 }
 
 type userResolver struct{ *Resolver }

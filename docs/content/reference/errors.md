@@ -2,7 +2,7 @@
 linkTitle: Handling Errors
 title: Sending custom error data in the graphql response
 description: Customising graphql error types to send custom error data back to the client using gqlgen.
-menu: { main: { parent: 'reference', weight: 10 } }
+menu: { main: { parent: 'reference' } }
 ---
 
 ## Returning errors
@@ -20,8 +20,8 @@ package foo
 import (
 	"context"
 
-	"github.com/vektah/gqlparser/v2/gqlerror"
-	"github.com/99designs/gqlgen/graphql"
+	"github.com/vektah/gqlparser/gqlerror"
+	"github.com/jlightning/gqlgen/graphql"
 )
 
 func (r Query) DoThings(ctx context.Context) (bool, error) {
@@ -69,20 +69,23 @@ This hook gives you the ability to customise errors however makes sense in your 
 The default error presenter will capture the resolver path and use the Error() message in the response. It will
 also call an Extensions() method if one is present to return graphql extensions.
 
-You change this when creating the server:
+You change this when creating the handler:
 ```go
-server := handler.NewDefaultServer(MakeExecutableSchema(resolvers)
-server.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
-    // any special logic you want to do here. Must specify path for correct null bubbling behaviour.
-    if myError, ok := e.(MyError) ; ok {
-        return gqlerror.ErrorPathf(graphql.GetFieldContext(ctx).Path(), "Eeek!")
-    }
+server := handler.GraphQL(MakeExecutableSchema(resolvers),
+	handler.ErrorPresenter(
+		func(ctx context.Context, e error) *gqlerror.Error {
+			// any special logic you want to do here. Must specify path for correct null bubbling behaviour.
+			if myError, ok := e.(MyError) ; ok {
+				return gqlerror.ErrorPathf(graphql.GetResolverContext(ctx).Path(), "Eeek!")
+			}
 
-    return graphql.DefaultErrorPresenter(ctx, e)
-})
+			return graphql.DefaultErrorPresenter(ctx, e)
+		}
+	),
+)
 ```
 
-This function will be called with the same resolver context that generated it, so you can extract the
+This function will be called with the the same resolver context that generated it, so you can extract the
 current resolver path and whatever other state you might want to notify the client about.
 
 
@@ -92,13 +95,14 @@ There is also a panic handler, called whenever a panic happens to gracefully ret
 stopping parsing. This is a good spot to notify your bug tracker and send a custom message to the user. Any errors
 returned from here will also go through the error presenter.
 
-You change this when creating the server:
+You change this when creating the handler:
 ```go
-server := handler.NewDefaultServer(MakeExecutableSchema(resolvers)
-server.SetRecoverFunc(func(ctx context.Context, err interface{}) error {
-    // notify bug tracker...
+server := handler.GraphQL(MakeExecutableSchema(resolvers),
+	handler.RecoverFunc(func(ctx context.Context, err interface{}) error {
+		// notify bug tracker...
 
-    return errors.New("Internal server error!")
-})
+		return fmt.Errorf("Internal server error!")
+	}
+}
 ```
 

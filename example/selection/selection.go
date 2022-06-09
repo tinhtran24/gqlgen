@@ -1,14 +1,14 @@
-//go:generate go run ../../testdata/gqlgen.go
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package selection
 
 import (
-	"context"
+	context "context"
 	"fmt"
 	"time"
 
-	"github.com/tinhtran24/gqlgen/graphql"
-	"github.com/vektah/gqlparser/v2/ast"
+	"github.com/jlightning/gqlgen/graphql"
+	"github.com/vektah/gqlparser/ast"
 )
 
 type Resolver struct{}
@@ -22,8 +22,8 @@ type queryResolver struct{ *Resolver }
 func (r *queryResolver) Events(ctx context.Context) ([]Event, error) {
 	var sels []string
 
-	reqCtx := graphql.GetOperationContext(ctx)
-	fieldSelections := graphql.GetFieldContext(ctx).Field.Selections
+	reqCtx := graphql.GetRequestContext(ctx)
+	fieldSelections := graphql.GetResolverContext(ctx).Field.Selections
 	for _, sel := range fieldSelections {
 		switch sel := sel.(type) {
 		case *ast.Field:
@@ -59,10 +59,10 @@ func (r *queryResolver) Events(ctx context.Context) ([]Event, error) {
 }
 
 func formatCollected(cf []graphql.CollectedField) []string {
-	res := make([]string, len(cf))
+	var res []string
 
-	for i, f := range cf {
-		res[i] = f.Name + " as " + f.Alias
+	for _, f := range cf {
+		res = append(res, fmt.Sprintf("%s as %s", f.Name, f.Alias))
 	}
 	return res
 }

@@ -4,18 +4,17 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/jlightning/gqlgen/example/dataloader"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/go-chi/chi"
-	"github.com/tinhtran24/gqlgen/example/dataloader"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/playground"
 )
 
 func main() {
 	router := chi.NewRouter()
 	router.Use(dataloader.LoaderMiddleware)
 
-	router.Handle("/", playground.Handler("Dataloader", "/query"))
-	router.Handle("/query", handler.NewDefaultServer(
+	router.Handle("/", handler.Playground("Dataloader", "/query"))
+	router.Handle("/query", handler.GraphQL(
 		dataloader.NewExecutableSchema(dataloader.Config{Resolvers: &dataloader.Resolver{}}),
 	))
 

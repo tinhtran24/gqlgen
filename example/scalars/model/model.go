@@ -8,41 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tinhtran24/gqlgen/example/scalars/external"
-	"github.com/tinhtran24/gqlgen/graphql"
+	"external"
+
+	"github.com/jlightning/gqlgen/graphql"
 )
 
 type Banned bool
 
-func (b Banned) MarshalGQL(w io.Writer) {
-	if b {
-		w.Write([]byte("true"))
-	} else {
-		w.Write([]byte("false"))
-	}
-}
-
-func (b *Banned) UnmarshalGQL(v interface{}) error {
-	switch v := v.(type) {
-	case string:
-		*b = strings.ToLower(v) == "true"
-		return nil
-	case bool:
-		*b = Banned(v)
-		return nil
-	default:
-		return fmt.Errorf("%T is not a bool", v)
-	}
-}
-
 type User struct {
 	ID       external.ObjectID
 	Name     string
-	Created  time.Time  // direct binding to builtin types with external Marshal/Unmarshal methods
-	Modified *time.Time // direct binding to builtin types with external Marshal/Unmarshal methods
-	ValPrefs Prefs      // external un/marshal that act on pointers
-	PtrPrefs *Prefs
-	IsBanned Banned
+	Created  time.Time // direct binding to builtin types with external Marshal/Unmarshal methods
+	IsBanned Banned    // aliased primitive
 	Address  Address
 	Tier     Tier
 }
@@ -176,20 +153,4 @@ func (e *Tier) UnmarshalGQL(v interface{}) error {
 
 func (e Tier) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-type Prefs struct {
-	DarkMode bool
-}
-
-func MarshalPreferences(p *Prefs) graphql.Marshaler {
-	return graphql.MarshalBoolean(p.DarkMode)
-}
-
-func UnmarshalPreferences(v interface{}) (*Prefs, error) {
-	tmp, err := graphql.UnmarshalBoolean(v)
-	if err != nil {
-		return nil, err
-	}
-	return &Prefs{DarkMode: tmp}, nil
 }

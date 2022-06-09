@@ -6,14 +6,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tinhtran24/gqlgen/graphql/handler/extension"
-
+	"github.com/jlightning/gqlgen/graphql"
+	"github.com/jlightning/gqlgen/handler"
+	"github.com/jlightning/gqlgen/integration"
 	"github.com/pkg/errors"
-	"github.com/tinhtran24/gqlgen/graphql"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/playground"
-	"github.com/tinhtran24/gqlgen/integration"
-	"github.com/vektah/gqlparser/v2/gqlerror"
+	"github.com/vektah/gqlparser/gqlerror"
 )
 
 const defaultPort = "8080"
@@ -24,27 +21,19 @@ func main() {
 		port = defaultPort
 	}
 
-	cfg := integration.Config{Resolvers: &integration.Resolver{}}
-	cfg.Complexity.Query.Complexity = func(childComplexity, value int) int {
-		// Allow the integration client to dictate the complexity, to verify this
-		// function is executed.
-		return value
-	}
-
-	srv := handler.NewDefaultServer(integration.NewExecutableSchema(cfg))
-	srv.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
-		if e, ok := errors.Cause(e).(*integration.CustomError); ok {
-			return &gqlerror.Error{
-				Message: e.UserMessage,
-				Path:    graphql.GetFieldContext(ctx).Path(),
+	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
+	http.Handle("/query", handler.GraphQL(
+		integration.NewExecutableSchema(integration.Config{Resolvers: &integration.Resolver{}}),
+		handler.ErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
+			if e, ok := errors.Cause(e).(*integration.CustomError); ok {
+				return &gqlerror.Error{
+					Message: e.UserMessage,
+					Path:    graphql.GetResolverContext(ctx).Path(),
+				}
 			}
-		}
-		return graphql.DefaultErrorPresenter(ctx, e)
-	})
-	srv.Use(extension.FixedComplexityLimit(1000))
-
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+			return graphql.DefaultErrorPresenter(ctx, e)
+		}),
+	))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

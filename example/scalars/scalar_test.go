@@ -1,13 +1,14 @@
 package scalars
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/jlightning/gqlgen/client"
+	"github.com/jlightning/gqlgen/graphql/introspection"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/client"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/introspection"
 )
 
 type RawUser struct {
@@ -21,7 +22,8 @@ type RawUser struct {
 }
 
 func TestScalars(t *testing.T) {
-	c := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}})))
+	srv := httptest.NewServer(handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{}})))
+	c := client.New(srv.URL)
 
 	t.Run("marshaling", func(t *testing.T) {
 		var resp struct {
@@ -59,7 +61,7 @@ func TestScalars(t *testing.T) {
 		var resp struct{ Search []RawUser }
 
 		err := c.Post(`{ search(input:{createdAfter:"2014"}) { id } }`, &resp)
-		require.EqualError(t, err, `[{"message":"time should be a unix timestamp","path":["search","input","createdAfter"]}]`)
+		require.EqualError(t, err, `[{"message":"time should be a unix timestamp"}]`)
 	})
 
 	t.Run("scalar resolver methods", func(t *testing.T) {

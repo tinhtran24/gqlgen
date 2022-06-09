@@ -1,6 +1,6 @@
-//go:generate go run github.com/vektah/dataloaden AddressLoader int *github.com/tinhtran24/gqlgen/example/dataloader.Address
-//go:generate go run github.com/vektah/dataloaden OrderSliceLoader int []*github.com/tinhtran24/gqlgen/example/dataloader.Order
-//go:generate go run github.com/vektah/dataloaden ItemSliceLoader int []*github.com/tinhtran24/gqlgen/example/dataloader.Item
+//go:generate gorunpkg github.com/vektah/dataloaden -keys int github.com/jlightning/gqlgen/example/dataloader.Address
+//go:generate gorunpkg github.com/vektah/dataloaden -keys int -slice github.com/jlightning/gqlgen/example/dataloader.Order
+//go:generate gorunpkg github.com/vektah/dataloaden -keys int -slice github.com/jlightning/gqlgen/example/dataloader.Item
 
 package dataloader
 
@@ -24,7 +24,6 @@ type loaders struct {
 	itemsByOrder     *ItemSliceLoader
 }
 
-// nolint: gosec
 func LoaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ldrs := loaders{}
@@ -58,7 +57,7 @@ func LoaderMiddleware(next http.Handler) http.Handler {
 		ldrs.ordersByCustomer = &OrderSliceLoader{
 			wait:     wait,
 			maxBatch: 100,
-			fetch: func(keys []int) ([][]*Order, []error) {
+			fetch: func(keys []int) ([][]Order, []error) {
 				var keySql []string
 				for _, key := range keys {
 					keySql = append(keySql, strconv.Itoa(key))
@@ -67,11 +66,11 @@ func LoaderMiddleware(next http.Handler) http.Handler {
 				fmt.Printf("SELECT * FROM orders WHERE customer_id IN (%s)\n", strings.Join(keySql, ","))
 				time.Sleep(5 * time.Millisecond)
 
-				orders := make([][]*Order, len(keys))
+				orders := make([][]Order, len(keys))
 				errors := make([]error, len(keys))
 				for i, key := range keys {
 					id := 10 + rand.Int()%3
-					orders[i] = []*Order{
+					orders[i] = []Order{
 						{ID: id, Amount: rand.Float64(), Date: time.Now().Add(-time.Duration(key) * time.Hour)},
 						{ID: id + 1, Amount: rand.Float64(), Date: time.Now().Add(-time.Duration(key) * time.Hour)},
 					}
@@ -88,7 +87,7 @@ func LoaderMiddleware(next http.Handler) http.Handler {
 		ldrs.itemsByOrder = &ItemSliceLoader{
 			wait:     wait,
 			maxBatch: 100,
-			fetch: func(keys []int) ([][]*Item, []error) {
+			fetch: func(keys []int) ([][]Item, []error) {
 				var keySql []string
 				for _, key := range keys {
 					keySql = append(keySql, strconv.Itoa(key))
@@ -97,10 +96,10 @@ func LoaderMiddleware(next http.Handler) http.Handler {
 				fmt.Printf("SELECT * FROM items JOIN item_order WHERE item_order.order_id IN (%s)\n", strings.Join(keySql, ","))
 				time.Sleep(5 * time.Millisecond)
 
-				items := make([][]*Item, len(keys))
+				items := make([][]Item, len(keys))
 				errors := make([]error, len(keys))
 				for i := range keys {
-					items[i] = []*Item{
+					items[i] = []Item{
 						{Name: "item " + strconv.Itoa(rand.Int()%20+20)},
 						{Name: "item " + strconv.Itoa(rand.Int()%20+20)},
 					}

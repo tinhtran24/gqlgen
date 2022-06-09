@@ -1,4 +1,4 @@
-//go:generate go run ../../testdata/gqlgen.go
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package type_system_extension
 
@@ -46,8 +46,12 @@ func (r *resolver) MyMutation() MyMutationResolver {
 
 type queryResolver struct{ *resolver }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*Todo, error) {
-	return r.todos, nil
+func (r *queryResolver) Todos(ctx context.Context) ([]Todo, error) {
+	todos := make([]Todo, 0, len(r.todos))
+	for _, todo := range r.todos {
+		todos = append(todos, *todo)
+	}
+	return todos, nil
 }
 
 func (r *queryResolver) Todo(ctx context.Context, id string) (*Todo, error) {
@@ -61,7 +65,7 @@ func (r *queryResolver) Todo(ctx context.Context, id string) (*Todo, error) {
 
 type mutationResolver struct{ *resolver }
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, todoInput TodoInput) (*Todo, error) {
+func (r *mutationResolver) CreateTodo(ctx context.Context, todoInput TodoInput) (Todo, error) {
 	newID := fmt.Sprintf("Todo:%d", len(r.todos)+1)
 	newTodo := &Todo{
 		ID:    newID,
@@ -70,5 +74,5 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, todoInput TodoInput) 
 	}
 	r.todos = append(r.todos, newTodo)
 
-	return newTodo, nil
+	return *newTodo, nil
 }

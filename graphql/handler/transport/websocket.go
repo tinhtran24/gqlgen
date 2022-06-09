@@ -1,4 +1,4 @@
-package transport
+package handler
 
 import (
 	"bytes"
@@ -10,10 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jlightning/gqlgen/graphql"
 	"github.com/gorilla/websocket"
-	"github.com/tinhtran24/gqlgen/graphql"
-	"github.com/tinhtran24/gqlgen/graphql/errcode"
-	"github.com/vektah/gqlparser/v2/gqlerror"
+	"github.com/vektah/gqlparser"
+	"github.com/vektah/gqlparser/ast"
+	"github.com/vektah/gqlparser/gqlerror"
+	"github.com/vektah/gqlparser/validator"
 )
 
 const (
@@ -29,53 +31,40 @@ const (
 	connectionKeepAliveMsg = "ka"                   // Server -> Client
 )
 
-type (
-	Websocket struct {
-		Upgrader              websocket.Upgrader
-		InitFunc              WebsocketInitFunc
-		KeepAlivePingInterval time.Duration
-	}
-	wsConnection struct {
-		Websocket
-		ctx             context.Context
-		conn            *websocket.Conn
-		active          map[string]context.CancelFunc
-		mu              sync.Mutex
-		keepAliveTicker *time.Ticker
-		exec            graphql.GraphExecutor
-
-		initPayload InitPayload
-	}
-	operationMessage struct {
-		Payload json.RawMessage `json:"payload,omitempty"`
-		ID      string          `json:"id,omitempty"`
-		Type    string          `json:"type"`
-	}
-	WebsocketInitFunc func(ctx context.Context, initPayload InitPayload) (context.Context, error)
-)
-
-var _ graphql.Transport = Websocket{}
-
-func (t Websocket) Supports(r *http.Request) bool {
-	return r.Header.Get("Upgrade") != ""
+type operationMessage struct {
+	Payload json.RawMessage `json:"payload,omitempty"`
+	ID      string          `json:"id,omitempty"`
+	Type    string          `json:"type"`
 }
 
-func (t Websocket) Do(w http.ResponseWriter, r *http.Request, exec graphql.GraphExecutor) {
-	ws, err := t.Upgrader.Upgrade(w, r, http.Header{
+type wsConnection struct {
+	ctx             context.Context
+	conn            *websocket.Conn
+	exec            graphql.ExecutableSchema
+	active          map[string]context.CancelFunc
+	mu              sync.Mutex
+	cfg             *Config
+	keepAliveTicker *time.Ticker
+
+	initPayload InitPayload
+}
+
+func connectWs(exec graphql.ExecutableSchema, w http.ResponseWriter, r *http.Request, cfg *Config) {
+	ws, err := cfg.upgrader.Upgrade(w, r, http.Header{
 		"Sec-Websocket-Protocol": []string{"graphql-ws"},
 	})
 	if err != nil {
 		log.Printf("unable to upgrade %T to websocket %s: ", w, err.Error())
-		SendErrorf(w, http.StatusBadRequest, "unable to upgrade")
+		sendErrorf(w, http.StatusBadRequest, "unable to upgrade")
 		return
 	}
 
 	conn := wsConnection{
-		active:    map[string]context.CancelFunc{},
-		conn:      ws,
-		ctx:       r.Context(),
-		exec:      exec,
-		Websocket: t,
+		active: map[string]context.CancelFunc{},
+		exec:   exec,
+		conn:   ws,
+		ctx:    r.Context(),
+		cfg:    cfg,
 	}
 
 	if !conn.init() {
@@ -102,18 +91,7 @@ func (c *wsConnection) init() bool {
 			}
 		}
 
-		if c.InitFunc != nil {
-			ctx, err := c.InitFunc(c.ctx, c.initPayload)
-			if err != nil {
-				c.sendConnectionError(err.Error())
-				c.close(websocket.CloseNormalClosure, "terminated")
-				return false
-			}
-			c.ctx = ctx
-		}
-
 		c.write(&operationMessage{Type: connectionAckMsg})
-		c.write(&operationMessage{Type: connectionKeepAliveMsg})
 	case connectionTerminateMsg:
 		c.close(websocket.CloseNormalClosure, "terminated")
 		return false
@@ -136,22 +114,18 @@ func (c *wsConnection) run() {
 	// We create a cancellation that will shutdown the keep-alive when we leave
 	// this function.
 	ctx, cancel := context.WithCancel(c.ctx)
-	defer func() {
-		cancel()
-		c.close(websocket.CloseAbnormalClosure, "unexpected closure")
-	}()
+	defer cancel()
 
 	// Create a timer that will fire every interval to keep the connection alive.
-	if c.KeepAlivePingInterval != 0 {
+	if c.cfg.connectionKeepAlivePingInterval != 0 {
 		c.mu.Lock()
-		c.keepAliveTicker = time.NewTicker(c.KeepAlivePingInterval)
+		c.keepAliveTicker = time.NewTicker(c.cfg.connectionKeepAlivePingInterval)
 		c.mu.Unlock()
 
 		go c.keepAlive(ctx)
 	}
 
 	for {
-		start := graphql.Now()
 		message := c.readOp()
 		if message == nil {
 			return
@@ -159,14 +133,19 @@ func (c *wsConnection) run() {
 
 		switch message.Type {
 		case startMsg:
-			c.subscribe(start, message)
+			if !c.subscribe(message) {
+				return
+			}
 		case stopMsg:
 			c.mu.Lock()
 			closer := c.active[message.ID]
 			c.mu.Unlock()
-			if closer != nil {
-				closer()
+			if closer == nil {
+				c.sendError(message.ID, gqlerror.Errorf("%s is not running, cannot stop", message.ID))
+				continue
 			}
+
+			closer()
 		case connectionTerminateMsg:
 			c.close(websocket.CloseNormalClosure, "terminated")
 			return
@@ -190,90 +169,91 @@ func (c *wsConnection) keepAlive(ctx context.Context) {
 	}
 }
 
-func (c *wsConnection) subscribe(start time.Time, message *operationMessage) {
-	ctx := graphql.StartOperationTrace(c.ctx)
-	var params *graphql.RawParams
-	if err := jsonDecode(bytes.NewReader(message.Payload), &params); err != nil {
-		c.sendError(message.ID, &gqlerror.Error{Message: "invalid json"})
-		c.complete(message.ID)
-		return
+func (c *wsConnection) subscribe(message *operationMessage) bool {
+	var reqParams params
+	if err := jsonDecode(bytes.NewReader(message.Payload), &reqParams); err != nil {
+		c.sendConnectionError("invalid json")
+		return false
 	}
 
-	params.ReadTime = graphql.TraceTiming{
-		Start: start,
-		End:   graphql.Now(),
+	doc, qErr := gqlparser.LoadQuery(c.exec.Schema(), reqParams.Query)
+	if qErr != nil {
+		c.sendError(message.ID, qErr...)
+		return true
 	}
 
-	rc, err := c.exec.CreateOperationContext(ctx, params)
+	op := doc.Operations.ForName(reqParams.OperationName)
+	if op == nil {
+		c.sendError(message.ID, gqlerror.Errorf("operation %s not found", reqParams.OperationName))
+		return true
+	}
+
+	vars, err := validator.VariableValues(c.exec.Schema(), op, reqParams.Variables)
 	if err != nil {
-		resp := c.exec.DispatchError(graphql.WithOperationContext(ctx, rc), err)
-		switch errcode.GetErrorKind(err) {
-		case errcode.KindProtocol:
-			c.sendError(message.ID, resp.Errors...)
-		default:
-			c.sendResponse(message.ID, &graphql.Response{Errors: err})
-		}
-
-		c.complete(message.ID)
-		return
+		c.sendError(message.ID, err)
+		return true
 	}
-
-	ctx = graphql.WithOperationContext(ctx, rc)
+	reqCtx := c.cfg.newRequestContext(c.exec, doc, op, reqParams.Query, vars)
+	ctx := graphql.WithRequestContext(c.ctx, reqCtx)
 
 	if c.initPayload != nil {
 		ctx = withInitPayload(ctx, c.initPayload)
+	}
+
+	if op.Operation != ast.Subscription {
+		var result *graphql.Response
+		if op.Operation == ast.Query {
+			result = c.exec.Query(ctx, op)
+		} else {
+			result = c.exec.Mutation(ctx, op)
+		}
+
+		c.sendData(message.ID, result)
+		c.write(&operationMessage{ID: message.ID, Type: completeMsg})
+		return true
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	c.mu.Lock()
 	c.active[message.ID] = cancel
 	c.mu.Unlock()
-
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				userErr := rc.Recover(ctx, r)
+				userErr := reqCtx.Recover(ctx, r)
 				c.sendError(message.ID, &gqlerror.Error{Message: userErr.Error()})
 			}
 		}()
-		responses, ctx := c.exec.DispatchOperation(ctx, rc)
-		for {
-			response := responses(ctx)
-			if response == nil {
-				break
-			}
-
-			c.sendResponse(message.ID, response)
+		next := c.exec.Subscription(ctx, op)
+		for result := next(); result != nil; result = next() {
+			c.sendData(message.ID, result)
 		}
-		c.complete(message.ID)
+
+		c.write(&operationMessage{ID: message.ID, Type: completeMsg})
 
 		c.mu.Lock()
 		delete(c.active, message.ID)
 		c.mu.Unlock()
 		cancel()
 	}()
+
+	return true
 }
 
-func (c *wsConnection) sendResponse(id string, response *graphql.Response) {
+func (c *wsConnection) sendData(id string, response *graphql.Response) {
 	b, err := json.Marshal(response)
 	if err != nil {
-		panic(err)
+		c.sendError(id, gqlerror.Errorf("unable to encode json response: %s", err.Error()))
+		return
 	}
-	c.write(&operationMessage{
-		Payload: b,
-		ID:      id,
-		Type:    dataMsg,
-	})
-}
 
-func (c *wsConnection) complete(id string) {
-	c.write(&operationMessage{ID: id, Type: completeMsg})
+	c.write(&operationMessage{Type: dataMsg, ID: id, Payload: b})
 }
 
 func (c *wsConnection) sendError(id string, errors ...*gqlerror.Error) {
-	errs := make([]error, len(errors))
-	for i, err := range errors {
-		errs[i] = err
+	var errs []error
+	for _, err := range errors {
+		errs = append(errs, err)
 	}
 	b, err := json.Marshal(errs)
 	if err != nil {
@@ -293,10 +273,8 @@ func (c *wsConnection) sendConnectionError(format string, args ...interface{}) {
 
 func (c *wsConnection) readOp() *operationMessage {
 	_, r, err := c.conn.NextReader()
-	if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseNoStatusReceived) {
-		return nil
-	} else if err != nil {
-		c.sendConnectionError("invalid json: %T %s", err, err.Error())
+	if err != nil {
+		c.sendConnectionError("invalid json")
 		return nil
 	}
 	message := operationMessage{}

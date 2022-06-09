@@ -1,14 +1,14 @@
-//go:generate go run ../../testdata/gqlgen.go
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package scalars
 
 import (
 	context "context"
+	"external"
 	"fmt"
 	time "time"
 
-	"github.com/tinhtran24/gqlgen/example/scalars/external"
-	"github.com/tinhtran24/gqlgen/example/scalars/model"
+	"github.com/jlightning/gqlgen/example/scalars/model"
 )
 
 type Resolver struct {
@@ -24,10 +24,6 @@ func (r *Resolver) User() UserResolver {
 
 type queryResolver struct{ *Resolver }
 
-func (r *queryResolver) UserByTier(ctx context.Context, tier model.Tier, darkMode *model.Prefs) ([]*model.User, error) {
-	panic("implement me")
-}
-
 func (r *queryResolver) User(ctx context.Context, id external.ObjectID) (*model.User, error) {
 	return &model.User{
 		ID:      id,
@@ -38,7 +34,7 @@ func (r *queryResolver) User(ctx context.Context, id external.ObjectID) (*model.
 	}, nil
 }
 
-func (r *queryResolver) Search(ctx context.Context, input *model.SearchArgs) ([]*model.User, error) {
+func (r *queryResolver) Search(ctx context.Context, input *model.SearchArgs) ([]model.User, error) {
 	location := model.Point{X: 1, Y: 2}
 	if input.Location != nil {
 		location = *input.Location
@@ -49,7 +45,7 @@ func (r *queryResolver) Search(ctx context.Context, input *model.SearchArgs) ([]
 		created = *input.CreatedAfter
 	}
 
-	return []*model.User{
+	return []model.User{
 		{
 			ID:      1,
 			Name:    "Test User 1",
@@ -73,6 +69,6 @@ func (r *userResolver) PrimitiveResolver(ctx context.Context, obj *model.User) (
 	return "test", nil
 }
 
-func (r *userResolver) CustomResolver(ctx context.Context, obj *model.User) (*model.Point, error) {
-	return &model.Point{X: 5, Y: 1}, nil
+func (r *userResolver) CustomResolver(ctx context.Context, obj *model.User) (model.Point, error) {
+	return model.Point{X: 5, Y: 1}, nil
 }

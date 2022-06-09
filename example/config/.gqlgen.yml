@@ -9,16 +9,22 @@ exec:
 model:
   filename: models_gen.go
 resolver:
+  filename: resolver.go
   type: Resolver
-  layout: follow-schema
-  dir: .
 
 models:
   Todo:    # Object
     fields:
+      id:
+        resolver: true
       text:
         fieldName: Description # Field
   NewTodo: # Input
     fields:
       userId:
         fieldName: UserID      # Field
+  User:
+    model: github.com/jlightning/gqlgen/example/config.User
+    fields:
+      name:
+        fieldName: FullName    # Method

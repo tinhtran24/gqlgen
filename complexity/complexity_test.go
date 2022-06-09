@@ -1,13 +1,14 @@
 package complexity
 
 import (
+	"context"
 	"math"
 	"testing"
 
+	"github.com/jlightning/gqlgen/graphql"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/graphql"
-	"github.com/vektah/gqlparser/v2"
-	"github.com/vektah/gqlparser/v2/ast"
+	"github.com/vektah/gqlparser"
+	"github.com/vektah/gqlparser/ast"
 )
 
 var schema = gqlparser.MustLoadSchema(
@@ -46,28 +47,11 @@ var schema = gqlparser.MustLoadSchema(
 	},
 )
 
-func requireComplexity(t *testing.T, source string, complexity int) {
+func requireComplexity(t *testing.T, source string, vars map[string]interface{}, complexity int) {
 	t.Helper()
 	query := gqlparser.MustLoadQuery(schema, source)
-
-	es := &graphql.ExecutableSchemaMock{
-		ComplexityFunc: func(typeName, field string, childComplexity int, args map[string]interface{}) (int, bool) {
-			switch typeName + "." + field {
-			case "ExpensiveItem.name":
-				return 5, true
-			case "Query.list", "Item.list":
-				return int(args["size"].(int64)) * childComplexity, true
-			case "Query.customObject":
-				return 1, true
-			}
-			return 0, false
-		},
-		SchemaFunc: func() *ast.Schema {
-			return schema
-		},
-	}
-
-	actualComplexity := Calculate(es, query.Operations[0], nil)
+	es := &executableSchemaStub{}
+	actualComplexity := Calculate(es, query.Operations[0], vars)
 	require.Equal(t, complexity, actualComplexity)
 }
 
@@ -78,7 +62,7 @@ func TestCalculate(t *testing.T) {
 			scalar
 		}
 		`
-		requireComplexity(t, query, 1)
+		requireComplexity(t, query, nil, 1)
 	})
 
 	t.Run("adds together fields", func(t *testing.T) {
@@ -88,7 +72,7 @@ func TestCalculate(t *testing.T) {
 			scalar2: scalar
 		}
 		`
-		requireComplexity(t, query, 2)
+		requireComplexity(t, query, nil, 2)
 	})
 
 	t.Run("a level of nesting adds complexity", func(t *testing.T) {
@@ -99,7 +83,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 2)
+		requireComplexity(t, query, nil, 2)
 	})
 
 	t.Run("adds together children", func(t *testing.T) {
@@ -111,7 +95,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 3)
+		requireComplexity(t, query, nil, 3)
 	})
 
 	t.Run("adds inline fragments", func(t *testing.T) {
@@ -122,7 +106,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 1)
+		requireComplexity(t, query, nil, 1)
 	})
 
 	t.Run("adds fragments", func(t *testing.T) {
@@ -135,7 +119,7 @@ func TestCalculate(t *testing.T) {
 			scalar
 		}
 		`
-		requireComplexity(t, query, 1)
+		requireComplexity(t, query, nil, 1)
 	})
 
 	t.Run("uses custom complexity", func(t *testing.T) {
@@ -146,7 +130,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 10)
+		requireComplexity(t, query, nil, 10)
 	})
 
 	t.Run("ignores negative custom complexity values", func(t *testing.T) {
@@ -157,7 +141,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 2)
+		requireComplexity(t, query, nil, 2)
 	})
 
 	t.Run("custom complexity must be >= child complexity", func(t *testing.T) {
@@ -170,7 +154,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 101)
+		requireComplexity(t, query, nil, 101)
 	})
 
 	t.Run("interfaces take max concrete cost", func(t *testing.T) {
@@ -181,7 +165,7 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, 6)
+		requireComplexity(t, query, nil, 6)
 	})
 
 	t.Run("guards against integer overflow", func(t *testing.T) {
@@ -210,6 +194,39 @@ func TestCalculate(t *testing.T) {
 			}
 		}
 		`
-		requireComplexity(t, query, math.MaxInt64)
+		requireComplexity(t, query, nil, math.MaxInt64)
 	})
+}
+
+type executableSchemaStub struct {
+}
+
+var _ graphql.ExecutableSchema = &executableSchemaStub{}
+
+func (e *executableSchemaStub) Schema() *ast.Schema {
+	return schema
+}
+
+func (e *executableSchemaStub) Complexity(typeName, field string, childComplexity int, args map[string]interface{}) (int, bool) {
+	switch typeName + "." + field {
+	case "ExpensiveItem.name":
+		return 5, true
+	case "Query.list", "Item.list":
+		return int(args["size"].(int64)) * childComplexity, true
+	case "Query.customObject":
+		return 1, true
+	}
+	return 0, false
+}
+
+func (e *executableSchemaStub) Query(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
+	panic("Query should never be called by complexity calculations")
+}
+
+func (e *executableSchemaStub) Mutation(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
+	panic("Mutation should never be called by complexity calculations")
+}
+
+func (e *executableSchemaStub) Subscription(ctx context.Context, op *ast.OperationDefinition) func() *graphql.Response {
+	panic("Subscription should never be called by complexity calculations")
 }

@@ -6,16 +6,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/tinhtran24/gqlgen/graphql/handler/extension"
-	"github.com/tinhtran24/gqlgen/graphql/handler/transport"
-
-	"github.com/tinhtran24/gqlgen/graphql/playground"
-
+	"github.com/jlightning/gqlgen/example/chat"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/gorilla/websocket"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/cors"
-	"github.com/tinhtran24/gqlgen/example/chat"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
 	"sourcegraph.com/sourcegraph/appdash"
 	appdashtracer "sourcegraph.com/sourcegraph/appdash/opentracing"
 	"sourcegraph.com/sourcegraph/appdash/traceapp"
@@ -29,22 +24,14 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	srv := handler.New(chat.NewExecutableSchema(chat.New()))
-
-	srv.AddTransport(transport.POST{})
-	srv.AddTransport(transport.Websocket{
-		KeepAlivePingInterval: 10 * time.Second,
-		Upgrader: websocket.Upgrader{
+	http.Handle("/", handler.Playground("Todo", "/query"))
+	http.Handle("/query", c.Handler(handler.GraphQL(chat.NewExecutableSchema(chat.New()),
+		handler.WebsocketUpgrader(websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true
 			},
-		},
-	})
-	srv.Use(extension.Introspection{})
-
-	http.Handle("/", playground.Handler("Todo", "/query"))
-	http.Handle("/query", c.Handler(srv))
-
+		}))),
+	)
 	log.Fatal(http.ListenAndServe(":8085", nil))
 }
 

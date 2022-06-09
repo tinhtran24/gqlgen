@@ -1,17 +1,13 @@
-//go:generate go run ../../testdata/gqlgen.go
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package chat
 
 import (
-	"context"
+	context "context"
 	"math/rand"
 	"sync"
 	"time"
-
-	"github.com/tinhtran24/gqlgen/graphql"
 )
-
-type ckey string
 
 type resolver struct {
 	Rooms map[string]*Chatroom
@@ -35,43 +31,22 @@ func New() Config {
 		Resolvers: &resolver{
 			Rooms: map[string]*Chatroom{},
 		},
-		Directives: DirectiveRoot{
-			User: func(ctx context.Context, obj interface{}, next graphql.Resolver, username string) (res interface{}, err error) {
-				return next(context.WithValue(ctx, ckey("username"), username))
-			},
-		},
 	}
-}
-
-func getUsername(ctx context.Context) string {
-	if username, ok := ctx.Value(ckey("username")).(string); ok {
-		return username
-	}
-	return ""
 }
 
 type Chatroom struct {
 	Name      string
 	Messages  []Message
-	Observers map[string]struct {
-		Username string
-		Message  chan *Message
-	}
+	Observers map[string]chan Message
 }
 
 type mutationResolver struct{ *resolver }
 
-func (r *mutationResolver) Post(ctx context.Context, text string, username string, roomName string) (*Message, error) {
+func (r *mutationResolver) Post(ctx context.Context, text string, username string, roomName string) (Message, error) {
 	r.mu.Lock()
 	room := r.Rooms[roomName]
 	if room == nil {
-		room = &Chatroom{
-			Name: roomName,
-			Observers: map[string]struct {
-				Username string
-				Message  chan *Message
-			}{},
-		}
+		room = &Chatroom{Name: roomName, Observers: map[string]chan Message{}}
 		r.Rooms[roomName] = room
 	}
 	r.mu.Unlock()
@@ -86,12 +61,10 @@ func (r *mutationResolver) Post(ctx context.Context, text string, username strin
 	room.Messages = append(room.Messages, message)
 	r.mu.Lock()
 	for _, observer := range room.Observers {
-		if observer.Username == "" || observer.Username == message.CreatedBy {
-			observer.Message <- &message
-		}
+		observer <- message
 	}
 	r.mu.Unlock()
-	return &message, nil
+	return message, nil
 }
 
 type queryResolver struct{ *resolver }
@@ -100,13 +73,7 @@ func (r *queryResolver) Room(ctx context.Context, name string) (*Chatroom, error
 	r.mu.Lock()
 	room := r.Rooms[name]
 	if room == nil {
-		room = &Chatroom{
-			Name: name,
-			Observers: map[string]struct {
-				Username string
-				Message  chan *Message
-			}{},
-		}
+		room = &Chatroom{Name: name, Observers: map[string]chan Message{}}
 		r.Rooms[name] = room
 	}
 	r.mu.Unlock()
@@ -116,23 +83,17 @@ func (r *queryResolver) Room(ctx context.Context, name string) (*Chatroom, error
 
 type subscriptionResolver struct{ *resolver }
 
-func (r *subscriptionResolver) MessageAdded(ctx context.Context, roomName string) (<-chan *Message, error) {
+func (r *subscriptionResolver) MessageAdded(ctx context.Context, roomName string) (<-chan Message, error) {
 	r.mu.Lock()
 	room := r.Rooms[roomName]
 	if room == nil {
-		room = &Chatroom{
-			Name: roomName,
-			Observers: map[string]struct {
-				Username string
-				Message  chan *Message
-			}{},
-		}
+		room = &Chatroom{Name: roomName, Observers: map[string]chan Message{}}
 		r.Rooms[roomName] = room
 	}
 	r.mu.Unlock()
 
 	id := randString(8)
-	events := make(chan *Message, 1)
+	events := make(chan Message, 1)
 
 	go func() {
 		<-ctx.Done()
@@ -142,10 +103,7 @@ func (r *subscriptionResolver) MessageAdded(ctx context.Context, roomName string
 	}()
 
 	r.mu.Lock()
-	room.Observers[id] = struct {
-		Username string
-		Message  chan *Message
-	}{Username: getUsername(ctx), Message: events}
+	room.Observers[id] = events
 	r.mu.Unlock()
 
 	return events, nil

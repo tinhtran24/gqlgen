@@ -1,17 +1,18 @@
 package starwars
 
 import (
+	"net/http/httptest"
 	"testing"
 
+	"github.com/jlightning/gqlgen/client"
+	"github.com/jlightning/gqlgen/graphql/introspection"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/client"
-	"github.com/tinhtran24/gqlgen/example/starwars/generated"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/introspection"
 )
 
 func TestStarwars(t *testing.T) {
-	c := client.New(handler.NewDefaultServer(generated.NewExecutableSchema(NewResolver())))
+	srv := httptest.NewServer(handler.GraphQL(NewExecutableSchema(NewResolver())))
+	c := client.New(srv.URL)
 
 	t.Run("Lukes starships", func(t *testing.T) {
 		var resp struct {
@@ -214,7 +215,7 @@ func TestStarwars(t *testing.T) {
 		  }
 		}`, &resp, client.Var("episode", "INVALID"))
 
-		require.EqualError(t, err, `http 422: {"errors":[{"message":"INVALID is not a valid Episode","path":["variable","episode"],"extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}],"data":null}`)
+		require.EqualError(t, err, `[{"message":"INVALID is not a valid Episode"}]`)
 	})
 
 	t.Run("introspection", func(t *testing.T) {

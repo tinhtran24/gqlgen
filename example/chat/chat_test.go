@@ -1,19 +1,21 @@
 package chat
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/jlightning/gqlgen/client"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/client"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
 )
 
 func TestChatSubscriptions(t *testing.T) {
-	c := client.New(handler.NewDefaultServer(NewExecutableSchema(New())))
+	srv := httptest.NewServer(handler.GraphQL(NewExecutableSchema(New())))
+	c := client.New(srv.URL)
 
-	sub := c.Websocket(`subscription @user(username:"vektah") { messageAdded(roomName:"#gophers") { text createdBy } }`)
+	sub := c.Websocket(`subscription { messageAdded(roomName:"#gophers") { text createdBy } }`)
 	defer sub.Close()
 
 	go func() {
@@ -21,8 +23,7 @@ func TestChatSubscriptions(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		err := c.Post(`mutation {
 				a:post(text:"Hello!", roomName:"#gophers", username:"vektah") { id }
-				b:post(text:"Hello Vektah!", roomName:"#gophers", username:"andrey") { id }
-				c:post(text:"Whats up?", roomName:"#gophers", username:"vektah") { id }
+				b:post(text:"Whats up?", roomName:"#gophers", username:"vektah") { id }
 			}`, &resp)
 		assert.NoError(t, err)
 	}()

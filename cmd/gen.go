@@ -1,43 +1,60 @@
 package cmd
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 
+	"github.com/jlightning/gqlgen/codegen"
 	"github.com/pkg/errors"
-	"github.com/tinhtran24/gqlgen/api"
-	"github.com/tinhtran24/gqlgen/codegen/config"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli"
 )
 
-var genCmd = &cli.Command{
+var genCmd = cli.Command{
 	Name:  "generate",
 	Usage: "generate a graphql server based on schema",
 	Flags: []cli.Flag{
-		&cli.BoolFlag{Name: "verbose, v", Usage: "show logs"},
-		&cli.StringFlag{Name: "config, c", Usage: "the config filename"},
+		cli.BoolFlag{Name: "verbose, v", Usage: "show logs"},
+		cli.StringFlag{Name: "config, c", Usage: "the config filename"},
 	},
-	Action: func(ctx *cli.Context) error {
-		var cfg *config.Config
+	Action: func(ctx *cli.Context) {
+		var config *codegen.Config
 		var err error
 		if configFilename := ctx.String("config"); configFilename != "" {
-			cfg, err = config.LoadConfig(configFilename)
+			config, err = codegen.LoadConfig(configFilename)
 			if err != nil {
-				return err
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
 			}
 		} else {
-			cfg, err = config.LoadConfigFromDefaultLocations()
+			config, err = codegen.LoadConfigFromDefaultLocations()
 			if os.IsNotExist(errors.Cause(err)) {
-				cfg, err = config.LoadDefaultConfig()
+				config = codegen.DefaultConfig()
+			} else if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
 			}
+		}
 
+		for _, filename := range config.SchemaFilename {
+			var schemaRaw []byte
+			schemaRaw, err = ioutil.ReadFile(filename)
 			if err != nil {
-				return err
+				fmt.Fprintln(os.Stderr, "unable to open schema: "+err.Error())
+				os.Exit(1)
 			}
+			config.SchemaStr[filename] = string(schemaRaw)
 		}
 
-		if err = api.Generate(cfg); err != nil {
-			return err
+		if err = config.Check(); err != nil {
+			fmt.Fprintln(os.Stderr, "invalid config format: "+err.Error())
+			os.Exit(1)
 		}
-		return nil
+
+		err = codegen.Generate(*config)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(2)
+		}
 	},
 }

@@ -5,7 +5,7 @@ linkTitle: Authentication
 menu: { main: { parent: 'recipes' } }
 ---
 
-We have an app where users are authenticated using a cookie in the HTTP request, and we want to check this authentication status somewhere in our graph. Because GraphQL is transport agnostic we can't assume there will even be an HTTP request, so we need to expose these authentication details to our graph using a middleware.
+We have an app where users are authenticated using a cookie in the HTTP request, and we want to check this authentication status somewhere in our graph. Because GraphQL is transport agnostic we can't assume there will even be an HTTP request, so we need to expose these authention details to our graph using a middleware.
 
 
 ```go
@@ -77,9 +77,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/99designs/gqlgen/example/starwars"
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/jlightning/gqlgen/example/starwars"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/go-chi/chi"
 )
 
@@ -88,9 +87,10 @@ func main() {
 
 	router.Use(auth.Middleware(db))
 
-    srv := handler.NewDefaultServer(starwars.NewExecutableSchema(starwars.NewResolver()))
-	router.Handle("/", playground.Handler("Starwars", "/query"))
-	router.Handle("/query", srv)
+	router.Handle("/", handler.Playground("Starwars", "/query"))
+	router.Handle("/query",
+		handler.GraphQL(starwars.NewExecutableSchema(starwars.NewResolver())),
+	)
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
@@ -114,44 +114,29 @@ func (r *queryResolver) Hero(ctx context.Context, episode Episode) (Character, e
 }
 ```
 
-### Websockets
+Things are different with websockets, and if you do things in the vein of the above example, you have to compute this at every call to `auth.ForContext`.
 
-If you need access to the websocket init payload we can do the same thing with the WebsocketInitFunc:
+```golang
+// ForContext finds the user from the context. REQUIRES Middleware to have run.
+func ForContext(ctx context.Context) *User {
+  raw, ok := ctx.Value(userCtxKey).(*User)
 
-```go
-func main() {
-	router := chi.NewRouter()
+  if !ok {
+    payload := handler.GetInitPayload(ctx)
+    if payload == nil {
+      return nil
+    }
 
-	router.Use(auth.Middleware(db))
+    userId, err := validateAndGetUserID(payload["token"])
+    if err != nil {
+      return nil
+    }
 
-	router.Handle("/", handler.Playground("Starwars", "/query"))
-	router.Handle("/query",
-		handler.GraphQL(starwars.NewExecutableSchema(starwars.NewResolver())),
-		WebsocketInitFunc(func(ctx context.Context, initPayload InitPayload) (context.Context, error) {
-			userId, err := validateAndGetUserID(payload["token"])
-			if err != nil {
-				return nil, err
-			}
+    return getUserByID(db, userId)
+  }
 
-			// get the user from the database
-			user := getUserByID(db, userId)
-
-			// put it in context
-			userCtx := context.WithValue(r.Context(), userCtxKey, user)
-
-			// and return it so the resolvers can see it
-			return userCtx, nil
-		}))
-	)
-
-	err := http.ListenAndServe(":8080", router)
-	if err != nil {
-		panic(err)
-	}
+	return raw
 }
 ```
 
-> Note
->
-> Subscriptions are long lived, if your tokens can timeout or need to be refreshed you should keep the token in
-context too and verify it is still valid in `auth.ForContext`.
+It's a bit inefficient if you have multiple calls to this function (e.g. on a field resolver), but what you might do to mitigate that is to have a session object set on the http request and only populate it upon the first check.

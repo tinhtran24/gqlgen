@@ -2,7 +2,7 @@
 title: "Setting CORS headers using rs/cors for gqlgen"
 description: Use the best of breed rs/cors library to set CORS headers when working with gqlgen
 linkTitle: CORS
-menu: { main: { parent: "recipes" } }
+menu: { main: { parent: 'recipes' } }
 ---
 
 Cross-Origin Resource Sharing (CORS) headers are required when your graphql server lives on a different domain to the one your client code is served. You can read more about CORS in the [MDN docs](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
@@ -15,11 +15,10 @@ gqlgen doesn't include a CORS implementation, but it is built to work with all s
 package main
 
 import (
-    "net/http"
+	"net/http"
 
-	"github.com/99designs/gqlgen/graphql/handler/transport"
-    "github.com/99designs/gqlgen/example/starwars"
-	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/jlightning/gqlgen/example/starwars"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/go-chi/chi"
 	"github.com/rs/cors"
 )
@@ -35,21 +34,10 @@ func main() {
 		Debug:            true,
 	}).Handler)
 
-
-    srv := handler.NewDefaultServer(starwars.NewExecutableSchema(starwars.NewResolver()))
-    srv.AddTransport(&transport.Websocket{
-        Upgrader: websocket.Upgrader{
-            CheckOrigin: func(r *http.Request) bool {
-                // Check against your desired domains here
-                 return r.Host == "example.org"
-            },
-            ReadBufferSize:  1024,
-            WriteBufferSize: 1024,
-        },
-    })
-
 	router.Handle("/", handler.Playground("Starwars", "/query"))
-	router.Handle("/query", srv)
+	router.Handle("/query",
+		handler.GraphQL(starwars.NewExecutableSchema(starwars.NewResolver())),
+	)
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {

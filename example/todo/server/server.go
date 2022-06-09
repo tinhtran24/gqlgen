@@ -7,21 +7,20 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/tinhtran24/gqlgen/example/todo"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/playground"
+	"github.com/jlightning/gqlgen/example/todo"
+	"github.com/jlightning/gqlgen/handler"
 )
 
 func main() {
-	srv := handler.NewDefaultServer(todo.NewExecutableSchema(todo.New()))
-	srv.SetRecoverFunc(func(ctx context.Context, err interface{}) (userMessage error) {
-		// send this panic somewhere
-		log.Print(err)
-		debug.PrintStack()
-		return errors.New("user message on panic")
-	})
-
-	http.Handle("/", playground.Handler("Todo", "/query"))
-	http.Handle("/query", srv)
+	http.Handle("/", handler.Playground("Todo", "/query"))
+	http.Handle("/query", handler.GraphQL(
+		todo.NewExecutableSchema(todo.New()),
+		handler.RecoverFunc(func(ctx context.Context, err interface{}) error {
+			// send this panic somewhere
+			log.Print(err)
+			debug.PrintStack()
+			return errors.New("user message on panic")
+		}),
+	))
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }

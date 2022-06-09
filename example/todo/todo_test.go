@@ -1,30 +1,32 @@
 package todo
 
 import (
+	"net/http/httptest"
 	"testing"
 
+	"github.com/jlightning/gqlgen/client"
+	"github.com/jlightning/gqlgen/graphql/introspection"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/client"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/introspection"
 )
 
 func TestTodo(t *testing.T) {
-	c := client.New(handler.NewDefaultServer(NewExecutableSchema(New())))
+	srv := httptest.NewServer(handler.GraphQL(NewExecutableSchema(New())))
+	c := client.New(srv.URL)
 
 	var resp struct {
-		CreateTodo struct{ ID string }
+		CreateTodo struct{ ID int }
 	}
 	c.MustPost(`mutation { createTodo(todo:{text:"Fery important"}) { id } }`, &resp)
 
-	require.Equal(t, "5", resp.CreateTodo.ID)
+	require.Equal(t, 5, resp.CreateTodo.ID)
 
 	t.Run("update the todo text", func(t *testing.T) {
 		var resp struct {
 			UpdateTodo struct{ Text string }
 		}
 		c.MustPost(
-			`mutation($id: ID!, $text: String!) { updateTodo(id: $id, changes:{text:$text}) { text } }`,
+			`mutation($id: Int!, $text: String!) { updateTodo(id: $id, changes:{text:$text}) { text } }`,
 			&resp,
 			client.Var("id", 5),
 			client.Var("text", "Very important"),
@@ -53,52 +55,15 @@ func TestTodo(t *testing.T) {
 		require.Equal(t, "Very important", resp.UpdateTodo.Text)
 	})
 
-	t.Run("update the todo status by user id in mutation", func(t *testing.T) {
-		var resp struct {
-			UpdateTodo struct {
-				Text string
-				Done bool
-			}
-		}
-		c.MustPost(`mutation @user(id:2){ updateTodo(id: 3, changes:{done:true}) { text, done } }`, &resp)
-
-		require.Equal(t, "Somebody else's todo", resp.UpdateTodo.Text)
-	})
-
-	t.Run("update the todo status by user id in field", func(t *testing.T) {
-		var resp struct {
-			UpdateTodo struct {
-				Text string
-				Done bool
-			}
-		}
-		c.MustPost(`mutation { updateTodo(id: 3, changes:{done:true})@user(id:2) { text, done } }`, &resp)
-
-		require.Equal(t, "Somebody else's todo", resp.UpdateTodo.Text)
-	})
-
-	t.Run("failed update the todo status by user id in field", func(t *testing.T) {
-		var resp struct {
-			UpdateTodo *struct {
-				Text string
-				Done bool
-			}
-		}
-		err := c.Post(`mutation { updateTodo(id: 3, changes:{done:true}) { text, done } }`, &resp)
-		require.EqualError(t, err, "[{\"message\":\"you dont own that\",\"path\":[\"updateTodo\",\"done\"]}]")
-
-		require.Nil(t, resp.UpdateTodo)
-	})
-
 	t.Run("select with alias", func(t *testing.T) {
 		var resp struct {
 			A struct{ Text string }
-			B struct{ ID string }
+			B struct{ ID int }
 		}
 		c.MustPost(`{ a: todo(id:1) { text } b: todo(id:2) { id } }`, &resp)
 
 		require.Equal(t, "A todo not to forget", resp.A.Text)
-		require.Equal(t, "2", resp.B.ID)
+		require.Equal(t, 2, resp.B.ID)
 	})
 
 	t.Run("find a missing todo", func(t *testing.T) {
@@ -136,17 +101,17 @@ func TestTodo(t *testing.T) {
 	t.Run("select all", func(t *testing.T) {
 		var resp struct {
 			Todo struct {
-				ID   string
+				ID   int
 				Text string
 				Done bool
 			}
 			LastTodo struct {
-				ID   string
+				ID   int
 				Text string
 				Done bool
 			}
 			Todos []struct {
-				ID   string
+				ID   int
 				Text string
 			}
 		}
@@ -156,11 +121,11 @@ func TestTodo(t *testing.T) {
 			todos { id text }
 		}`, &resp)
 
-		require.Equal(t, "1", resp.Todo.ID)
-		require.Equal(t, "5", resp.LastTodo.ID)
+		require.Equal(t, 1, resp.Todo.ID)
+		require.Equal(t, 5, resp.LastTodo.ID)
 		require.Len(t, resp.Todos, 5)
 		require.Equal(t, "Very important", resp.LastTodo.Text)
-		require.Equal(t, "5", resp.LastTodo.ID)
+		require.Equal(t, 5, resp.LastTodo.ID)
 	})
 
 	t.Run("introspection", func(t *testing.T) {
@@ -180,7 +145,8 @@ func TestTodo(t *testing.T) {
 }
 
 func TestSkipAndIncludeDirectives(t *testing.T) {
-	c := client.New(handler.NewDefaultServer(NewExecutableSchema(New())))
+	srv := httptest.NewServer(handler.GraphQL(NewExecutableSchema(New())))
+	c := client.New(srv.URL)
 
 	t.Run("skip on field", func(t *testing.T) {
 		var resp map[string]interface{}

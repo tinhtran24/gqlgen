@@ -4,14 +4,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/tinhtran24/gqlgen/example/scalars"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/playground"
+	"github.com/jlightning/gqlgen/example/scalars"
+	"github.com/jlightning/gqlgen/handler"
 )
 
 func main() {
-	http.Handle("/", playground.Handler("Starwars", "/query"))
-	http.Handle("/query", handler.NewDefaultServer(scalars.NewExecutableSchema(scalars.Config{Resolvers: &scalars.Resolver{}})))
+	http.Handle("/", handler.Playground("Starwars", "/query"))
+	http.Handle("/query", handler.GraphQL(scalars.NewExecutableSchema(scalars.Config{Resolvers: &scalars.Resolver{}})))
 
 	log.Fatal(http.ListenAndServe(":8084", nil))
 }

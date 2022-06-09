@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tinhtran24/gqlgen/graphql/playground"
-
-	extension "github.com/tinhtran24/gqlgen/example/type-system-extension"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
+	"github.com/jlightning/gqlgen/example/type-system-extension"
+	"github.com/jlightning/gqlgen/handler"
 )
 
 const defaultPort = "8080"
@@ -19,18 +17,18 @@ func main() {
 		port = defaultPort
 	}
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", handler.NewDefaultServer(
-		extension.NewExecutableSchema(
-			extension.Config{
-				Resolvers: extension.NewRootResolver(),
-				Directives: extension.DirectiveRoot{
-					EnumLogging:   extension.EnumLogging,
-					FieldLogging:  extension.FieldLogging,
-					InputLogging:  extension.InputLogging,
-					ObjectLogging: extension.ObjectLogging,
-					ScalarLogging: extension.ScalarLogging,
-					UnionLogging:  extension.UnionLogging,
+	http.Handle("/", handler.Playground("GraphQL playground", "/query"))
+	http.Handle("/query", handler.GraphQL(
+		type_system_extension.NewExecutableSchema(
+			type_system_extension.Config{
+				Resolvers: type_system_extension.NewRootResolver(),
+				Directives: type_system_extension.DirectiveRoot{
+					EnumLogging:   type_system_extension.EnumLogging,
+					FieldLogging:  type_system_extension.FieldLogging,
+					InputLogging:  type_system_extension.InputLogging,
+					ObjectLogging: type_system_extension.ObjectLogging,
+					ScalarLogging: type_system_extension.ScalarLogging,
+					UnionLogging:  type_system_extension.UnionLogging,
 				},
 			},
 		),

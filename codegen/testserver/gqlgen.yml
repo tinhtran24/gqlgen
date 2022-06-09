@@ -1,6 +1,5 @@
-schema:
-  - "*.graphql"
-skip_validation: true
+schema: schema.graphql
+
 exec:
   filename: generated.go
 model:
@@ -9,11 +8,33 @@ resolver:
   filename: resolver.go
   type: Resolver
 
-autobind:
-  - "github.com/99designs/gqlgen/codegen/testserver"
-  - "github.com/99designs/gqlgen/codegen/testserver/introspection"
-  - "github.com/99designs/gqlgen/codegen/testserver/invalid-packagename"
-
 models:
-  Email:
-    model: "github.com/99designs/gqlgen/codegen/testserver.Email"
+  It:
+    model: "github.com/jlightning/gqlgen/codegen/testserver/introspection.It"
+  ModelMethods:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.ModelMethods"
+  InvalidIdentifier:
+    model: "github.com/jlightning/gqlgen/codegen/testserver/invalid-packagename.InvalidIdentifier"
+  Changes:
+    model: "map[string]interface{}"
+  RecursiveInputSlice:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.RecursiveInputSlice"
+  Shape:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.Shape"
+  ShapeUnion:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.ShapeUnion"
+  Circle:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.Circle"
+  Rectangle:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.Rectangle"
+  ForcedResolver:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.ForcedResolver"
+    fields:
+      field: { resolver: true }
+  User:
+    fields:
+      friends: { resolver: true }
+  Error:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.Error"
+  EmbeddedPointer:
+    model: "github.com/jlightning/gqlgen/codegen/testserver.EmbeddedPointerModel"

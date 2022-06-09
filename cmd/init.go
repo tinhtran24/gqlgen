@@ -3,79 +3,25 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/tinhtran24/gqlgen/api"
-	"github.com/tinhtran24/gqlgen/codegen/config"
-	"github.com/tinhtran24/gqlgen/internal/code"
-	"github.com/tinhtran24/gqlgen/plugin/servergen"
-	"github.com/urfave/cli/v2"
+	"github.com/jlightning/gqlgen/codegen"
+	"github.com/pkg/errors"
+	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 )
 
-var configTemplate = template.Must(template.New("name").Parse(
-	`# Where are all the schema files located? globs are supported eg  src/**/*.graphqls
-schema:
-  - graph/*.graphqls
-
-# Where should the generated server code go?
-exec:
-  filename: graph/generated/generated.go
-  package: generated
-
-# Uncomment to enable federation
-# federation:
-#   filename: graph/generated/federation.go
-#   package: generated
-
-# Where should any generated models go?
-model:
-  filename: graph/model/models_gen.go
-  package: model
-
-# Where should the resolver implementations go?
-resolver:
-  layout: follow-schema
-  dir: graph
-  package: graph
-
-# Optional: turn on use ` + "`" + `gqlgen:"fieldName"` + "`" + ` tags in your models
-# struct_tag: json
-
-# Optional: turn on to use []Thing instead of []*Thing
-# omit_slice_element_pointers: false
-
-# Optional: set to speed up generation time by not performing a final validation pass.
-# skip_validation: true
-
-# gqlgen will search for any type names in the schema in these go packages
-# if they match it will use them, otherwise it will generate them.
-autobind:
-  - "{{.}}/graph/model"
-
-# This section declares type mapping between the GraphQL and go type systems
+var configComment = `
+# .gqlgen.yml example
 #
-# The first line in each type will be used as defaults for resolver arguments and
-# modelgen, the others will be allowed when binding to fields. Configure them to
-# your liking
-models:
-  ID:
-    model:
-      - github.com/tinhtran24/gqlgen/graphql.ID
-      - github.com/tinhtran24/gqlgen/graphql.Int
-      - github.com/tinhtran24/gqlgen/graphql.Int64
-      - github.com/tinhtran24/gqlgen/graphql.Int32
-  Int:
-    model:
-      - github.com/tinhtran24/gqlgen/graphql.Int
-      - github.com/tinhtran24/gqlgen/graphql.Int64
-      - github.com/tinhtran24/gqlgen/graphql.Int32
-`))
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+`
 
-var schemaDefault = `# GraphQL schema example
+var schemaDefault = `
+# GraphQL schema example
 #
 # https://gqlgen.com/getting-started/
 
@@ -105,95 +51,112 @@ type Mutation {
 }
 `
 
-var initCmd = &cli.Command{
+var initCmd = cli.Command{
 	Name:  "init",
 	Usage: "create a new gqlgen project",
 	Flags: []cli.Flag{
-		&cli.BoolFlag{Name: "verbose, v", Usage: "show logs"},
-		&cli.StringFlag{Name: "config, c", Usage: "the config filename"},
-		&cli.StringFlag{Name: "server", Usage: "where to write the server stub to", Value: "server.go"},
-		&cli.StringFlag{Name: "schema", Usage: "where to write the schema stub to", Value: "graph/schema.graphqls"},
+		cli.BoolFlag{Name: "verbose, v", Usage: "show logs"},
+		cli.StringFlag{Name: "config, c", Usage: "the config filename"},
+		cli.StringFlag{Name: "server", Usage: "where to write the server stub to", Value: "server/server.go"},
+		cli.StringFlag{Name: "schema", Usage: "where to write the schema stub to", Value: "schema.graphql"},
 	},
-	Action: func(ctx *cli.Context) error {
-		configFilename := ctx.String("config")
-		serverFilename := ctx.String("server")
+	Action: func(ctx *cli.Context) {
+		initSchema(ctx.String("schema"))
+		config := initConfig(ctx)
 
-		pkgName := code.ImportPathForDir(".")
-		if pkgName == "" {
-			return fmt.Errorf("unable to determine import path for current directory, you probably need to run go mod init first")
-		}
-
-		if err := initSchema(ctx.String("schema")); err != nil {
-			return err
-		}
-		if !configExists(configFilename) {
-			if err := initConfig(configFilename, pkgName); err != nil {
-				return err
-			}
-		}
-
-		GenerateGraphServer(serverFilename)
-		return nil
+		GenerateGraphServer(config, ctx.String("server"))
 	},
 }
 
-func GenerateGraphServer(serverFilename string) {
-	cfg, err := config.LoadConfigFromDefaultLocations()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+func GenerateGraphServer(config *codegen.Config, serverFilename string) {
+	for _, filename := range config.SchemaFilename {
+		schemaRaw, err := ioutil.ReadFile(filename)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "unable to open schema: "+err.Error())
+			os.Exit(1)
+		}
+		config.SchemaStr[filename] = string(schemaRaw)
 	}
 
-	if err := api.Generate(cfg, api.AddPlugin(servergen.New(serverFilename))); err != nil {
+	if err := config.Check(); err != nil {
+		fmt.Fprintln(os.Stderr, "invalid config format: "+err.Error())
+		os.Exit(1)
+	}
+
+	if err := codegen.Generate(*config); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	if err := codegen.GenerateServer(*config, serverFilename); err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 
 	fmt.Fprintf(os.Stdout, "Exec \"go run ./%s\" to start GraphQL server\n", serverFilename)
 }
 
-func configExists(configFilename string) bool {
-	var cfg *config.Config
-
+func initConfig(ctx *cli.Context) *codegen.Config {
+	var config *codegen.Config
+	var err error
+	configFilename := ctx.String("config")
 	if configFilename != "" {
-		cfg, _ = config.LoadConfig(configFilename)
+		config, err = codegen.LoadConfig(configFilename)
 	} else {
-		cfg, _ = config.LoadConfigFromDefaultLocations()
+		config, err = codegen.LoadConfigFromDefaultLocations()
 	}
-	return cfg != nil
-}
 
-func initConfig(configFilename string, pkgName string) error {
+	if config != nil {
+		fmt.Fprintf(os.Stderr, "init failed: a configuration file already exists at %s\n", config.FilePath)
+		os.Exit(1)
+	}
+
+	if !os.IsNotExist(errors.Cause(err)) {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
 	if configFilename == "" {
 		configFilename = "gqlgen.yml"
 	}
+	config = codegen.DefaultConfig()
 
-	if err := os.MkdirAll(filepath.Dir(configFilename), 0755); err != nil {
-		return fmt.Errorf("unable to create config dir: " + err.Error())
+	config.Resolver = codegen.PackageConfig{
+		Filename: "resolver.go",
+		Type:     "Resolver",
 	}
 
 	var buf bytes.Buffer
-	if err := configTemplate.Execute(&buf, pkgName); err != nil {
-		panic(err)
+	buf.WriteString(strings.TrimSpace(configComment))
+	buf.WriteString("\n\n")
+	{
+		var b []byte
+		b, err = yaml.Marshal(config)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "unable to marshal yaml: "+err.Error())
+			os.Exit(1)
+		}
+		buf.Write(b)
 	}
 
-	if err := ioutil.WriteFile(configFilename, buf.Bytes(), 0644); err != nil {
-		return fmt.Errorf("unable to write cfg file: " + err.Error())
+	err = ioutil.WriteFile(configFilename, buf.Bytes(), 0644)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "unable to write config file: "+err.Error())
+		os.Exit(1)
 	}
 
-	return nil
+	return config
 }
 
-func initSchema(schemaFilename string) error {
+func initSchema(schemaFilename string) {
 	_, err := os.Stat(schemaFilename)
 	if !os.IsNotExist(err) {
-		return nil
+		return
 	}
 
-	if err := os.MkdirAll(filepath.Dir(schemaFilename), 0755); err != nil {
-		return fmt.Errorf("unable to create schema dir: " + err.Error())
+	err = ioutil.WriteFile(schemaFilename, []byte(strings.TrimSpace(schemaDefault)), 0644)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "unable to write schema file: "+err.Error())
+		os.Exit(1)
 	}
-
-	if err = ioutil.WriteFile(schemaFilename, []byte(strings.TrimSpace(schemaDefault)), 0644); err != nil {
-		return fmt.Errorf("unable to write schema file: " + err.Error())
-	}
-	return nil
 }

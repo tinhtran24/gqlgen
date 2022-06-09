@@ -2,11 +2,10 @@ package templates
 
 import (
 	"fmt"
-	"go/types"
+	"go/build"
 	"strconv"
-	"strings"
 
-	"github.com/tinhtran24/gqlgen/internal/code"
+	"github.com/jlightning/gqlgen/internal/gopath"
 )
 
 type Import struct {
@@ -16,13 +15,12 @@ type Import struct {
 }
 
 type Imports struct {
-	imports  []*Import
-	destDir  string
-	packages *code.Packages
+	imports []*Import
+	destDir string
 }
 
 func (i *Import) String() string {
-	if strings.HasSuffix(i.Path, i.Alias) {
+	if i.Alias == i.Name {
 		return strconv.Quote(i.Path)
 	}
 
@@ -40,42 +38,43 @@ func (s *Imports) String() string {
 	return res
 }
 
-func (s *Imports) Reserve(path string, aliases ...string) (string, error) {
+func (s *Imports) Reserve(path string, aliases ...string) string {
 	if path == "" {
 		panic("empty ambient import")
 	}
 
 	// if we are referencing our own package we dont need an import
-	if code.ImportPathForDir(s.destDir) == path {
-		return "", nil
+	if gopath.MustDir2Import(s.destDir) == path {
+		return ""
 	}
 
-	name := s.packages.NameForPackage(path)
+	pkg, err := build.Default.Import(path, s.destDir, 0)
+	if err != nil {
+		panic(err)
+	}
+
 	var alias string
 	if len(aliases) != 1 {
-		alias = name
+		alias = pkg.Name
 	} else {
 		alias = aliases[0]
 	}
 
 	if existing := s.findByPath(path); existing != nil {
-		if existing.Alias == alias {
-			return "", nil
-		}
-		return "", fmt.Errorf("ambient import already exists")
+		panic("ambient import already exists")
 	}
 
 	if alias := s.findByAlias(alias); alias != nil {
-		return "", fmt.Errorf("ambient import collides on an alias")
+		panic("ambient import collides on an alias")
 	}
 
 	s.imports = append(s.imports, &Import{
-		Name:  name,
+		Name:  pkg.Name,
 		Path:  path,
 		Alias: alias,
 	})
 
-	return "", nil
+	return ""
 }
 
 func (s *Imports) Lookup(path string) string {
@@ -83,10 +82,8 @@ func (s *Imports) Lookup(path string) string {
 		return ""
 	}
 
-	path = code.NormalizeVendor(path)
-
 	// if we are referencing our own package we dont need an import
-	if code.ImportPathForDir(s.destDir) == path {
+	if gopath.MustDir2Import(s.destDir) == path {
 		return ""
 	}
 
@@ -94,8 +91,13 @@ func (s *Imports) Lookup(path string) string {
 		return existing.Alias
 	}
 
+	pkg, err := build.Default.Import(path, s.destDir, 0)
+	if err != nil {
+		panic(err)
+	}
+
 	imp := &Import{
-		Name: s.packages.NameForPackage(path),
+		Name: pkg.Name,
 		Path: path,
 	}
 	s.imports = append(s.imports, imp)
@@ -112,12 +114,6 @@ func (s *Imports) Lookup(path string) string {
 	imp.Alias = alias
 
 	return imp.Alias
-}
-
-func (s *Imports) LookupType(t types.Type) string {
-	return types.TypeString(t, func(i *types.Package) string {
-		return s.Lookup(i.Path())
-	})
 }
 
 func (s Imports) findByPath(importPath string) *Import {

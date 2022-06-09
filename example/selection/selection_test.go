@@ -1,15 +1,18 @@
 package selection
 
 import (
+	"net/http/httptest"
 	"testing"
 
+	"github.com/jlightning/gqlgen/client"
+
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/client"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
 )
 
 func TestSelection(t *testing.T) {
-	c := client.New(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}})))
+	srv := httptest.NewServer(handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{}})))
+	c := client.New(srv.URL)
 
 	query := `{
 			events {

@@ -1,14 +1,14 @@
-exec:
-  filename: generated/exec.go
-model:
-  filename: models/generated.go
-
-autobind:
-  - github.com/99designs/gqlgen/example/starwars/models
-
 models:
+  Droid:
+    model: github.com/jlightning/gqlgen/example/starwars.Droid
+  FriendsConnection:
+    model: github.com/jlightning/gqlgen/example/starwars.FriendsConnection
+  Human:
+    model: github.com/jlightning/gqlgen/example/starwars.Human
+  Review:
+    model: github.com/jlightning/gqlgen/example/starwars.Review
   ReviewInput:
-    model: models.Review
+    model: github.com/jlightning/gqlgen/example/starwars.Review
   Starship:
     fields:
       length:

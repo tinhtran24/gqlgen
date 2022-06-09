@@ -1,4 +1,4 @@
-//go:generate go run ../../testdata/gqlgen.go
+//go:generate gorunpkg github.com/jlightning/gqlgen
 
 package todo
 
@@ -8,26 +8,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jlightning/gqlgen/graphql"
 	"github.com/mitchellh/mapstructure"
-	"github.com/tinhtran24/gqlgen/graphql"
 )
 
 var you = &User{ID: 1, Name: "You"}
 var them = &User{ID: 2, Name: "Them"}
 
-type ckey string
-
-func getUserId(ctx context.Context) int {
-	if id, ok := ctx.Value(ckey("userId")).(int); ok {
-		return id
-	}
-	return you.ID
-}
-
 func New() Config {
 	c := Config{
 		Resolvers: &resolvers{
-			todos: []*Todo{
+			todos: []Todo{
 				{ID: 1, Text: "A todo not to forget", Done: false, owner: you},
 				{ID: 2, Text: "This is the most important", Done: false, owner: you},
 				{ID: 3, Text: "Somebody else's todo", Done: true, owner: them},
@@ -42,26 +33,27 @@ func New() Config {
 			// No admin for you!
 			return nil, nil
 		case RoleOwner:
+			// This is also available in context
+			if obj != graphql.GetResolverContext(ctx).Parent.Result {
+				return nil, fmt.Errorf("parent type mismatch")
+			}
 			ownable, isOwnable := obj.(Ownable)
 			if !isOwnable {
 				return nil, fmt.Errorf("obj cant be owned")
 			}
 
-			if ownable.Owner().ID != getUserId(ctx) {
+			if ownable.Owner().ID != you.ID {
 				return nil, fmt.Errorf("you dont own that")
 			}
 		}
 
 		return next(ctx)
 	}
-	c.Directives.User = func(ctx context.Context, obj interface{}, next graphql.Resolver, id int) (interface{}, error) {
-		return next(context.WithValue(ctx, ckey("userId"), id))
-	}
 	return c
 }
 
 type resolvers struct {
-	todos  []*Todo
+	todos  []Todo
 	lastID int
 }
 
@@ -84,7 +76,7 @@ func (r *QueryResolver) Todo(ctx context.Context, id int) (*Todo, error) {
 
 	for _, todo := range r.todos {
 		if todo.ID == id {
-			return todo, nil
+			return &todo, nil
 		}
 	}
 	return nil, errors.New("not found")
@@ -94,19 +86,19 @@ func (r *QueryResolver) LastTodo(ctx context.Context) (*Todo, error) {
 	if len(r.todos) == 0 {
 		return nil, errors.New("not found")
 	}
-	return r.todos[len(r.todos)-1], nil
+	return &r.todos[len(r.todos)-1], nil
 }
 
-func (r *QueryResolver) Todos(ctx context.Context) ([]*Todo, error) {
+func (r *QueryResolver) Todos(ctx context.Context) ([]Todo, error) {
 	return r.todos, nil
 }
 
 type MutationResolver resolvers
 
-func (r *MutationResolver) CreateTodo(ctx context.Context, todo TodoInput) (*Todo, error) {
+func (r *MutationResolver) CreateTodo(ctx context.Context, todo TodoInput) (Todo, error) {
 	newID := r.id()
 
-	newTodo := &Todo{
+	newTodo := Todo{
 		ID:    newID,
 		Text:  todo.Text,
 		owner: you,
@@ -126,7 +118,7 @@ func (r *MutationResolver) UpdateTodo(ctx context.Context, id int, changes map[s
 
 	for i := 0; i < len(r.todos); i++ {
 		if r.todos[i].ID == id {
-			affectedTodo = r.todos[i]
+			affectedTodo = &r.todos[i]
 			break
 		}
 	}

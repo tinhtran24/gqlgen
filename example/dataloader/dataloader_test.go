@@ -1,16 +1,18 @@
 package dataloader
 
 import (
+	"net/http/httptest"
 	"testing"
 
+	"github.com/jlightning/gqlgen/client"
+	"github.com/jlightning/gqlgen/graphql/introspection"
+	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
-	"github.com/tinhtran24/gqlgen/client"
-	"github.com/tinhtran24/gqlgen/graphql/handler"
-	"github.com/tinhtran24/gqlgen/graphql/introspection"
 )
 
 func TestTodo(t *testing.T) {
-	c := client.New(LoaderMiddleware(handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))))
+	srv := httptest.NewServer(LoaderMiddleware(handler.GraphQL(NewExecutableSchema(Config{Resolvers: &Resolver{}}))))
+	c := client.New(srv.URL)
 
 	t.Run("create a new todo", func(t *testing.T) {
 		var resp interface{}
@@ -82,7 +84,7 @@ func TestTodo(t *testing.T) {
 		}
 		err := c.Post(`{ torture2d(customerIds:{}) { id name } }`, &resp)
 
-		require.EqualError(t, err, "[{\"message\":\"map[string]interface {} is not an int\",\"path\":[\"torture2d\",\"customerIds\",0,0]}]")
+		require.EqualError(t, err, "[{\"message\":\"map[string]interface {} is not an int\"}]")
 	})
 
 }
