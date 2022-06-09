@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/jlightning/gqlgen/example/chat"
-	"github.com/jlightning/gqlgen/handler"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/cors"
 	"github.com/tinhtran24/gqlgen/example/chat"

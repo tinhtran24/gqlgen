@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"external"
+	"github.com/tinhtran24/gqlgen/example/scalars/external"
 
 	"github.com/tinhtran24/gqlgen/graphql"
 )
