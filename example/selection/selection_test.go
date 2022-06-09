@@ -4,10 +4,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jlightning/gqlgen/client"
+	"github.com/tinhtran24/gqlgen/client"
 
-	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/handler"
 )
 
 func TestSelection(t *testing.T) {

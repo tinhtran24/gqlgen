@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"go/types"
 	"os"
 	"testing"
 
@@ -11,15 +12,24 @@ func TestImports(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	aBar := "github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
-	bBar := "github.com/jlightning/gqlgen/codegen/templates/testdata/b/bar"
-	mismatch := "github.com/jlightning/gqlgen/codegen/templates/testdata/pkg_mismatch"
+	aBar := "github.com/tinhtran24/gqlgen/codegen/templates/testdata/a/bar"
+	bBar := "github.com/tinhtran24/gqlgen/codegen/templates/testdata/b/bar"
+	mismatch := "github.com/tinhtran24/gqlgen/codegen/templates/testdata/pkg_mismatch"
 
 	t.Run("multiple lookups is ok", func(t *testing.T) {
 		a := Imports{destDir: wd}
 
 		require.Equal(t, "bar", a.Lookup(aBar))
 		require.Equal(t, "bar", a.Lookup(aBar))
+	})
+
+	t.Run("lookup by type", func(t *testing.T) {
+		a := Imports{destDir: wd}
+
+		pkg := types.NewPackage("github.com/tinhtran24/gqlgen/codegen/templates/testdata/b/bar", "bar")
+		typ := types.NewNamed(types.NewTypeName(0, pkg, "Boolean", types.Typ[types.Bool]), types.Typ[types.Bool], nil)
+
+		require.Equal(t, "bar.Boolean", a.LookupType(typ))
 	})
 
 	t.Run("duplicates are decollisioned", func(t *testing.T) {
@@ -47,40 +57,21 @@ func TestImports(t *testing.T) {
 
 		require.Equal(
 			t,
-			`"github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
-bar1 "github.com/jlightning/gqlgen/codegen/templates/testdata/b/bar"
-"github.com/jlightning/gqlgen/codegen/templates/testdata/pkg_mismatch"`,
+			`"github.com/tinhtran24/gqlgen/codegen/templates/testdata/a/bar"
+bar1 "github.com/tinhtran24/gqlgen/codegen/templates/testdata/b/bar"
+"github.com/tinhtran24/gqlgen/codegen/templates/testdata/pkg_mismatch"`,
 			a.String(),
 		)
-	})
-
-	t.Run("reserved collisions on path will panic", func(t *testing.T) {
-		a := Imports{destDir: wd}
-
-		a.Reserve(aBar)
-
-		require.Panics(t, func() {
-			a.Reserve(aBar)
-		})
-	})
-
-	t.Run("reserved collisions on alias will panic", func(t *testing.T) {
-		a := Imports{destDir: wd}
-
-		a.Reserve(aBar)
-
-		require.Panics(t, func() {
-			a.Reserve(bBar)
-		})
 	})
 
 	t.Run("aliased imports will not collide", func(t *testing.T) {
 		a := Imports{destDir: wd}
 
-		a.Reserve(aBar, "abar")
-		a.Reserve(bBar, "bbar")
+		_, _ = a.Reserve(aBar, "abar")
+		_, _ = a.Reserve(bBar, "bbar")
 
-		require.Equal(t, `abar "github.com/jlightning/gqlgen/codegen/templates/testdata/a/bar"
-bbar "github.com/jlightning/gqlgen/codegen/templates/testdata/b/bar"`, a.String())
+		require.Equal(t, `abar "github.com/tinhtran24/gqlgen/codegen/templates/testdata/a/bar"
+bbar "github.com/tinhtran24/gqlgen/codegen/templates/testdata/b/bar"`, a.String())
 	})
+
 }

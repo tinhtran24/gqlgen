@@ -35,7 +35,7 @@ Add the following file to your project under `scripts/gqlgen.go`:
 
 package main
 
-import "github.com/jlightning/gqlgen/cmd"
+import "github.com/tinhtran24/gqlgen/cmd"
 
 func main() {
 	cmd.Execute()

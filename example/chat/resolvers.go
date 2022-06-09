@@ -1,4 +1,4 @@
-//go:generate gorunpkg github.com/jlightning/gqlgen
+//go:generate gorunpkg github.com/tinhtran24/gqlgen
 
 package chat
 

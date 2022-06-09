@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jlightning/gqlgen/example/selection"
-	"github.com/jlightning/gqlgen/handler"
+	"github.com/tinhtran24/gqlgen/example/selection"
+	"github.com/tinhtran24/gqlgen/handler"
 )
 
 func main() {

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jlightning/gqlgen/graphql"
-	"github.com/jlightning/gqlgen/handler"
-	"github.com/jlightning/gqlgen/integration"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/handler"
+	"github.com/tinhtran24/gqlgen/integration"
 	"github.com/vektah/gqlparser/gqlerror"
 )
 

@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jlightning/gqlgen/example/starwars"
-	"github.com/jlightning/gqlgen/graphql"
-	"github.com/jlightning/gqlgen/handler"
+	"github.com/tinhtran24/gqlgen/example/starwars"
+	"github.com/tinhtran24/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/handler"
 )
 
 func main() {

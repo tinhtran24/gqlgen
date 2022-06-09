@@ -1,6 +1,6 @@
-//go:generate gorunpkg github.com/vektah/dataloaden -keys int github.com/jlightning/gqlgen/example/dataloader.Address
-//go:generate gorunpkg github.com/vektah/dataloaden -keys int -slice github.com/jlightning/gqlgen/example/dataloader.Order
-//go:generate gorunpkg github.com/vektah/dataloaden -keys int -slice github.com/jlightning/gqlgen/example/dataloader.Item
+//go:generate gorunpkg github.com/vektah/dataloaden -keys int github.com/tinhtran24/gqlgen/example/dataloader.Address
+//go:generate gorunpkg github.com/vektah/dataloaden -keys int -slice github.com/tinhtran24/gqlgen/example/dataloader.Order
+//go:generate gorunpkg github.com/vektah/dataloaden -keys int -slice github.com/tinhtran24/gqlgen/example/dataloader.Item
 
 package dataloader
 

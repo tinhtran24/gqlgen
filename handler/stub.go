@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/jlightning/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/graphql"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 )

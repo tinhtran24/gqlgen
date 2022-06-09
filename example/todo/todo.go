@@ -1,4 +1,4 @@
-//go:generate gorunpkg github.com/jlightning/gqlgen
+//go:generate gorunpkg github.com/tinhtran24/gqlgen
 
 package todo
 
@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jlightning/gqlgen/graphql"
 	"github.com/mitchellh/mapstructure"
+	"github.com/tinhtran24/gqlgen/graphql"
 )
 
 var you = &User{ID: 1, Name: "You"}
