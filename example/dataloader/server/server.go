@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/jlightning/gqlgen/example/dataloader"
-	"github.com/jlightning/gqlgen/handler"
 	"github.com/go-chi/chi"
+	"github.com/tinhtran24/gqlgen/example/dataloader"
+	"github.com/tinhtran24/gqlgen/handler"
 )
 
 func main() {

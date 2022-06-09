@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jlightning/gqlgen/internal/gopath"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/internal/gopath"
 	"github.com/vektah/gqlparser/ast"
 	"gopkg.in/yaml.v2"
 )

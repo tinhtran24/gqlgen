@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"syscall"
 
-	"github.com/jlightning/gqlgen/codegen/templates"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/codegen/templates"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 	"github.com/vektah/gqlparser/gqlerror"
@@ -127,19 +127,19 @@ func (cfg *Config) normalize() error {
 	}
 
 	builtins := TypeMap{
-		"__Directive":  {Model: "github.com/jlightning/gqlgen/graphql/introspection.Directive"},
-		"__Type":       {Model: "github.com/jlightning/gqlgen/graphql/introspection.Type"},
-		"__Field":      {Model: "github.com/jlightning/gqlgen/graphql/introspection.Field"},
-		"__EnumValue":  {Model: "github.com/jlightning/gqlgen/graphql/introspection.EnumValue"},
-		"__InputValue": {Model: "github.com/jlightning/gqlgen/graphql/introspection.InputValue"},
-		"__Schema":     {Model: "github.com/jlightning/gqlgen/graphql/introspection.Schema"},
-		"Int":          {Model: "github.com/jlightning/gqlgen/graphql.Int"},
-		"Float":        {Model: "github.com/jlightning/gqlgen/graphql.Float"},
-		"String":       {Model: "github.com/jlightning/gqlgen/graphql.String"},
-		"Boolean":      {Model: "github.com/jlightning/gqlgen/graphql.Boolean"},
-		"ID":           {Model: "github.com/jlightning/gqlgen/graphql.ID"},
-		"Time":         {Model: "github.com/jlightning/gqlgen/graphql.Time"},
-		"Map":          {Model: "github.com/jlightning/gqlgen/graphql.Map"},
+		"__Directive":  {Model: "github.com/tinhtran24/gqlgen/graphql/introspection.Directive"},
+		"__Type":       {Model: "github.com/tinhtran24/gqlgen/graphql/introspection.Type"},
+		"__Field":      {Model: "github.com/tinhtran24/gqlgen/graphql/introspection.Field"},
+		"__EnumValue":  {Model: "github.com/tinhtran24/gqlgen/graphql/introspection.EnumValue"},
+		"__InputValue": {Model: "github.com/tinhtran24/gqlgen/graphql/introspection.InputValue"},
+		"__Schema":     {Model: "github.com/tinhtran24/gqlgen/graphql/introspection.Schema"},
+		"Int":          {Model: "github.com/tinhtran24/gqlgen/graphql.Int"},
+		"Float":        {Model: "github.com/tinhtran24/gqlgen/graphql.Float"},
+		"String":       {Model: "github.com/tinhtran24/gqlgen/graphql.String"},
+		"Boolean":      {Model: "github.com/tinhtran24/gqlgen/graphql.Boolean"},
+		"ID":           {Model: "github.com/tinhtran24/gqlgen/graphql.ID"},
+		"Time":         {Model: "github.com/tinhtran24/gqlgen/graphql.Time"},
+		"Map":          {Model: "github.com/tinhtran24/gqlgen/graphql.Map"},
 	}
 
 	if cfg.Models == nil {

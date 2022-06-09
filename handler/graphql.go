@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jlightning/gqlgen/complexity"
-	"github.com/jlightning/gqlgen/graphql"
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/golang-lru"
+	"github.com/tinhtran24/gqlgen/complexity"
+	"github.com/tinhtran24/gqlgen/graphql"
 	"github.com/vektah/gqlparser/ast"
 	"github.com/vektah/gqlparser/gqlerror"
 	"github.com/vektah/gqlparser/parser"

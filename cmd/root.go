@@ -6,12 +6,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/jlightning/gqlgen/graphql"
-	"github.com/jlightning/gqlgen/internal/gopath"
+	"github.com/tinhtran24/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/internal/gopath"
 	"github.com/urfave/cli"
 
 	// Required since otherwise dep will prune away these unused packages before codegen has a chance to run
-	_ "github.com/jlightning/gqlgen/handler"
+	_ "github.com/tinhtran24/gqlgen/handler"
 )
 
 func Execute() {

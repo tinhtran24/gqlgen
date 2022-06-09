@@ -3,8 +3,8 @@ package testserver
 import (
 	"context"
 
-	introspection1 "github.com/jlightning/gqlgen/codegen/testserver/introspection"
-	"github.com/jlightning/gqlgen/codegen/testserver/invalid-packagename"
+	introspection1 "github.com/tinhtran24/gqlgen/codegen/testserver/introspection"
+	"github.com/tinhtran24/gqlgen/codegen/testserver/invalid-packagename"
 )
 
 type Resolver struct{}
