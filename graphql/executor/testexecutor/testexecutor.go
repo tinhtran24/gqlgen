@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/graphql/executor"
+	"github.com/tinhtran24/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/graphql/executor"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )

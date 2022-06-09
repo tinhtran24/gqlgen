@@ -6,9 +6,9 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/99designs/gqlgen/codegen"
-	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/codegen"
+	"github.com/tinhtran24/gqlgen/codegen/config"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -27,7 +27,7 @@ func TestLayoutSingleFile(t *testing.T) {
 	}
 
 	require.NoError(t, p.GenerateCode(data))
-	assertNoErrors(t, "github.com/99designs/gqlgen/plugin/resolvergen/testdata/singlefile/out")
+	assertNoErrors(t, "github.com/tinhtran24/gqlgen/plugin/resolvergen/testdata/singlefile/out")
 }
 
 func TestLayoutFollowSchema(t *testing.T) {
@@ -69,7 +69,7 @@ func testFollowSchemaPersistence(t *testing.T, dir string) {
 	}
 
 	require.NoError(t, p.GenerateCode(data))
-	assertNoErrors(t, "github.com/99designs/gqlgen/plugin/resolvergen/"+dir+"/out")
+	assertNoErrors(t, "github.com/tinhtran24/gqlgen/plugin/resolvergen/"+dir+"/out")
 }
 
 func assertNoErrors(t *testing.T, pkg string) {

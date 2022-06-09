@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/99designs/gqlgen/internal/code"
+	"github.com/tinhtran24/gqlgen/internal/code"
 	"golang.org/x/tools/go/packages"
 )
 

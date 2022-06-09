@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/tinhtran24/gqlgen/graphql/handler/transport"
 
-	"github.com/99designs/gqlgen/client"
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/client"
+	"github.com/tinhtran24/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/graphql/handler"
 )
 
 func TestSubscriptions(t *testing.T) {

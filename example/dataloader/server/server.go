@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/99designs/gqlgen/example/dataloader"
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
+	"github.com/tinhtran24/gqlgen/example/dataloader"
+	"github.com/tinhtran24/gqlgen/graphql/handler"
+	"github.com/tinhtran24/gqlgen/graphql/playground"
 )
 
 func main() {

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/99designs/gqlgen/graphql/handler/testserver"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/stretchr/testify/assert"
+	"github.com/tinhtran24/gqlgen/graphql/handler/testserver"
+	"github.com/tinhtran24/gqlgen/graphql/handler/transport"
 )
 
 func TestOptions(t *testing.T) {

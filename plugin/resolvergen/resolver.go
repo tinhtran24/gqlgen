@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/99designs/gqlgen/codegen"
-	"github.com/99designs/gqlgen/codegen/config"
-	"github.com/99designs/gqlgen/codegen/templates"
-	"github.com/99designs/gqlgen/internal/rewrite"
-	"github.com/99designs/gqlgen/plugin"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/codegen"
+	"github.com/tinhtran24/gqlgen/codegen/config"
+	"github.com/tinhtran24/gqlgen/codegen/templates"
+	"github.com/tinhtran24/gqlgen/internal/rewrite"
+	"github.com/tinhtran24/gqlgen/plugin"
 )
 
 func New() plugin.Plugin {

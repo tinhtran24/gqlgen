@@ -3,13 +3,13 @@ package api
 import (
 	"syscall"
 
-	"github.com/99designs/gqlgen/codegen"
-	"github.com/99designs/gqlgen/codegen/config"
-	"github.com/99designs/gqlgen/plugin"
-	"github.com/99designs/gqlgen/plugin/federation"
-	"github.com/99designs/gqlgen/plugin/modelgen"
-	"github.com/99designs/gqlgen/plugin/resolvergen"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/codegen"
+	"github.com/tinhtran24/gqlgen/codegen/config"
+	"github.com/tinhtran24/gqlgen/plugin"
+	"github.com/tinhtran24/gqlgen/plugin/federation"
+	"github.com/tinhtran24/gqlgen/plugin/modelgen"
+	"github.com/tinhtran24/gqlgen/plugin/resolvergen"
 )
 
 func Generate(cfg *config.Config, option ...Option) error {

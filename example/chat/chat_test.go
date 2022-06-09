@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/99designs/gqlgen/client"
-	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/client"
+	"github.com/tinhtran24/gqlgen/graphql/handler"
 )
 
 func TestChatSubscriptions(t *testing.T) {
@@ -19,10 +19,10 @@ func TestChatSubscriptions(t *testing.T) {
 	go func() {
 		var resp interface{}
 		time.Sleep(10 * time.Millisecond)
-		err := c.Post(`mutation { 
-				a:post(text:"Hello!", roomName:"#gophers", username:"vektah") { id } 
-				b:post(text:"Hello Vektah!", roomName:"#gophers", username:"andrey") { id } 
-				c:post(text:"Whats up?", roomName:"#gophers", username:"vektah") { id } 
+		err := c.Post(`mutation {
+				a:post(text:"Hello!", roomName:"#gophers", username:"vektah") { id }
+				b:post(text:"Hello Vektah!", roomName:"#gophers", username:"andrey") { id }
+				c:post(text:"Whats up?", roomName:"#gophers", username:"vektah") { id }
 			}`, &resp)
 		assert.NoError(t, err)
 	}()

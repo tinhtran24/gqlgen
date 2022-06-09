@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/99designs/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/graphql"
 )
 
 // MultipartForm the Multipart request spec https://github.com/jaydenseric/graphql-multipart-request-spec

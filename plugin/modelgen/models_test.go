@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/99designs/gqlgen/codegen/config"
-	"github.com/99designs/gqlgen/plugin/modelgen/out"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/codegen/config"
+	"github.com/tinhtran24/gqlgen/plugin/modelgen/out"
 )
 
 func TestModelGeneration(t *testing.T) {

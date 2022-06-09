@@ -3,9 +3,9 @@ package cmd
 import (
 	"os"
 
-	"github.com/99designs/gqlgen/api"
-	"github.com/99designs/gqlgen/codegen/config"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/api"
+	"github.com/tinhtran24/gqlgen/codegen/config"
 	"github.com/urfave/cli/v2"
 )
 

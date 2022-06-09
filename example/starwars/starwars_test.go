@@ -3,11 +3,11 @@ package starwars
 import (
 	"testing"
 
-	"github.com/99designs/gqlgen/client"
-	"github.com/99designs/gqlgen/example/starwars/generated"
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/client"
+	"github.com/tinhtran24/gqlgen/example/starwars/generated"
+	"github.com/tinhtran24/gqlgen/graphql/handler"
+	"github.com/tinhtran24/gqlgen/graphql/introspection"
 )
 
 func TestStarwars(t *testing.T) {
