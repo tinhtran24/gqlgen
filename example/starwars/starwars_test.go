@@ -4,10 +4,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jlightning/gqlgen/client"
-	"github.com/jlightning/gqlgen/graphql/introspection"
-	"github.com/jlightning/gqlgen/handler"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/client"
+	"github.com/tinhtran24/gqlgen/graphql/introspection"
+	"github.com/tinhtran24/gqlgen/handler"
 )
 
 func TestStarwars(t *testing.T) {

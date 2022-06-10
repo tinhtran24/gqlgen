@@ -1,14 +1,14 @@
 models:
   Droid:
-    model: github.com/jlightning/gqlgen/example/starwars.Droid
+    model: github.com/tinhtran24/gqlgen/example/starwars.Droid
   FriendsConnection:
-    model: github.com/jlightning/gqlgen/example/starwars.FriendsConnection
+    model: github.com/tinhtran24/gqlgen/example/starwars.FriendsConnection
   Human:
-    model: github.com/jlightning/gqlgen/example/starwars.Human
+    model: github.com/tinhtran24/gqlgen/example/starwars.Human
   Review:
-    model: github.com/jlightning/gqlgen/example/starwars.Review
+    model: github.com/tinhtran24/gqlgen/example/starwars.Review
   ReviewInput:
-    model: github.com/jlightning/gqlgen/example/starwars.Review
+    model: github.com/tinhtran24/gqlgen/example/starwars.Review
   Starship:
     fields:
       length:

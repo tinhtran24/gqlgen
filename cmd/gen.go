@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/jlightning/gqlgen/codegen"
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/codegen"
 	"github.com/urfave/cli"
 )
 

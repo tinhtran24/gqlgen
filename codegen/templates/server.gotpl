@@ -7,7 +7,7 @@ import (
 	{{ reserveImport "log" }}
 	{{ reserveImport "net/http" }}
 	{{ reserveImport "os" }}
-	{{ reserveImport "github.com/jlightning/gqlgen/handler" }}
+	{{ reserveImport "github.com/tinhtran24/gqlgen/handler" }}
 )
 
 const defaultPort = "8080"

@@ -8,13 +8,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
 
-	"github.com/jlightning/gqlgen/internal/imports"
+	"github.com/tinhtran24/gqlgen/internal/imports"
 
 	"github.com/pkg/errors"
 )
@@ -23,6 +24,10 @@ import (
 var CurrentImports *Imports
 
 func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
+	// load path relative to calling source file
+	_, callerFile, _, _ := runtime.Caller(1)
+	rootDir := filepath.Dir(callerFile)
+
 	t := template.New("").Funcs(template.FuncMap{
 		"ucFirst":       ucFirst,
 		"lcFirst":       lcFirst,
@@ -34,12 +39,21 @@ func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
 		"reserveImport": CurrentImports.Reserve,
 		"lookupImport":  CurrentImports.Lookup,
 	})
+	var roots []string
 
 	for filename, data := range data {
-		_, err := t.New(filename).Parse(data)
-		if err != nil {
-			panic(err)
-		}
+		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			name = filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator))) + filename
+			t, err = t.New(name).Parse(data)
+			if err != nil {
+				panic(err)
+			}
+			roots = append(roots, name)
+			return nil
+		})
 	}
 
 	buf := &bytes.Buffer{}
@@ -157,7 +171,6 @@ func RenderToFile(tpl string, filename string, data interface{}) error {
 		panic(fmt.Errorf("recursive or concurrent call to RenderToFile detected"))
 	}
 	CurrentImports = &Imports{destDir: filepath.Dir(filename)}
-
 	var buf *bytes.Buffer
 	buf, err := Run(tpl, data)
 	if err != nil {

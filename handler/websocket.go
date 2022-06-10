@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jlightning/gqlgen/graphql"
 	"github.com/gorilla/websocket"
+	"github.com/tinhtran24/gqlgen/graphql"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 	"github.com/vektah/gqlparser/gqlerror"

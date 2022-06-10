@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"go/build"
 	"strconv"
-
-	"github.com/jlightning/gqlgen/internal/gopath"
 )
 
 type Import struct {
@@ -43,11 +41,6 @@ func (s *Imports) Reserve(path string, aliases ...string) string {
 		panic("empty ambient import")
 	}
 
-	// if we are referencing our own package we dont need an import
-	if gopath.MustDir2Import(s.destDir) == path {
-		return ""
-	}
-
 	pkg, err := build.Default.Import(path, s.destDir, 0)
 	if err != nil {
 		panic(err)
@@ -79,11 +72,6 @@ func (s *Imports) Reserve(path string, aliases ...string) string {
 
 func (s *Imports) Lookup(path string) string {
 	if path == "" {
-		return ""
-	}
-
-	// if we are referencing our own package we dont need an import
-	if gopath.MustDir2Import(s.destDir) == path {
 		return ""
 	}
 

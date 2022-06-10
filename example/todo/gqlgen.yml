@@ -1,3 +1,3 @@
 models:
   Todo:
-    model: github.com/jlightning/gqlgen/example/todo.Todo
+    model: github.com/tinhtran24/gqlgen/example/todo.Todo
