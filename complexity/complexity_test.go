@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/jlightning/gqlgen/graphql"
 	"github.com/stretchr/testify/require"
+	"github.com/tinhtran24/gqlgen/graphql"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 )

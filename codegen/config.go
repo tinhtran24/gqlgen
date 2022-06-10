@@ -5,11 +5,12 @@ import (
 	"go/build"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
-	"github.com/jlightning/gqlgen/internal/gopath"
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/ast"
 	"gopkg.in/yaml.v2"
@@ -157,7 +158,11 @@ func (c *PackageConfig) normalize() error {
 }
 
 func (c *PackageConfig) ImportPath() string {
-	return gopath.MustDir2Import(c.Dir())
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	return path.Dir(filename)
 }
 
 func (c *PackageConfig) Dir() string {

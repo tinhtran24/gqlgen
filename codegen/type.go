@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jlightning/gqlgen/codegen/templates"
+	"github.com/tinhtran24/gqlgen/codegen/templates"
 
 	"github.com/vektah/gqlparser/ast"
 )

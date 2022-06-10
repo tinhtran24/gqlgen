@@ -14,7 +14,7 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/jlightning/gqlgen/internal/imports"
+	"github.com/tinhtran24/gqlgen/internal/imports"
 
 	"github.com/pkg/errors"
 )

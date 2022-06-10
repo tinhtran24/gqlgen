@@ -6,12 +6,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/jlightning/gqlgen/graphql"
-	"github.com/jlightning/gqlgen/internal/gopath"
+	"github.com/tinhtran24/gqlgen/graphql"
 	"github.com/urfave/cli"
 
 	// Required since otherwise dep will prune away these unused packages before codegen has a chance to run
-	_ "github.com/jlightning/gqlgen/handler"
+	_ "github.com/tinhtran24/gqlgen/handler"
 )
 
 func Execute() {
@@ -23,14 +22,6 @@ func Execute() {
 	app.Flags = genCmd.Flags
 	app.Version = graphql.Version
 	app.Before = func(context *cli.Context) error {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("unable to determine current workding dir: %s\n", err.Error())
-		}
-
-		if !gopath.Contains(pwd) {
-			return fmt.Errorf("gqlgen must be run from inside your $GOPATH\n")
-		}
 		if context.Bool("verbose") {
 			log.SetFlags(0)
 		} else {

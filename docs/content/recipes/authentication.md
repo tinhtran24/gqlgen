@@ -77,8 +77,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/jlightning/gqlgen/example/starwars"
-	"github.com/jlightning/gqlgen/handler"
+	"github.com/tinhtran24/gqlgen/example/starwars"
+	"github.com/tinhtran24/gqlgen/handler"
 	"github.com/go-chi/chi"
 )
 

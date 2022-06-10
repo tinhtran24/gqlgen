@@ -10,7 +10,7 @@ import (
 
 	"external"
 
-	"github.com/jlightning/gqlgen/graphql"
+	"github.com/tinhtran24/gqlgen/graphql"
 )
 
 type Banned bool
