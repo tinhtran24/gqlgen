@@ -2,12 +2,11 @@ package codegen
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"go/build"
 	"go/types"
-	"os"
-
-	"github.com/pkg/errors"
 	"golang.org/x/tools/go/loader"
+	"os"
 )
 
 type Build struct {

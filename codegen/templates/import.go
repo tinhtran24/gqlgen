@@ -2,7 +2,6 @@ package templates
 
 import (
 	"fmt"
-	"go/build"
 	"go/types"
 	"strconv"
 
@@ -39,38 +38,42 @@ func (s *Imports) String() string {
 	return res
 }
 
-func (s *Imports) Reserve(path string, aliases ...string) string {
+func (s *Imports) Reserve(path string, aliases ...string) (string, error) {
 	if path == "" {
 		panic("empty ambient import")
 	}
 
-	pkg, err := build.Default.Import(path, s.destDir, 0)
-	if err != nil {
-		panic(err)
+	// if we are referencing our own package we dont need an import
+	if code.ImportPathForDir(s.destDir) == path {
+		return "", nil
 	}
 
+	name := code.NameForPackage(path)
 	var alias string
 	if len(aliases) != 1 {
-		alias = pkg.Name
+		alias = name
 	} else {
 		alias = aliases[0]
 	}
 
 	if existing := s.findByPath(path); existing != nil {
-		panic("ambient import already exists")
+		if existing.Alias == alias {
+			return "", nil
+		}
+		return "", fmt.Errorf("ambient import already exists")
 	}
 
 	if alias := s.findByAlias(alias); alias != nil {
-		panic("ambient import collides on an alias")
+		return "", fmt.Errorf("ambient import collides on an alias")
 	}
 
 	s.imports = append(s.imports, &Import{
-		Name:  pkg.Name,
+		Name:  name,
 		Path:  path,
 		Alias: alias,
 	})
 
-	return ""
+	return "", nil
 }
 
 func (s *Imports) Lookup(path string) string {
