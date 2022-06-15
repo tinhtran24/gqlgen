@@ -2,12 +2,11 @@ package codegen
 
 import (
 	"fmt"
+	"github.com/tinhtran24/gqlgen/internal/code"
 	"go/build"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -158,11 +157,7 @@ func (c *PackageConfig) normalize() error {
 }
 
 func (c *PackageConfig) ImportPath() string {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("No caller information")
-	}
-	return path.Dir(filename)
+	return code.ImportPathForDir(c.Dir())
 }
 
 func (c *PackageConfig) Dir() string {

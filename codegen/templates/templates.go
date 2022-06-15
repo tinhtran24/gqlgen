@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// this is done with a global because subtemplates currently get called in functions. Lets aim to remove this eventually.
+// CurrentImports this is done with a global because subtemplates currently get called in functions. Lets aim to remove this eventually.
 var CurrentImports *Imports
 
 func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
