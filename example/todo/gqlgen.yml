@@ -1,3 +1,7 @@
 models:
   Todo:
     model: github.com/tinhtran24/gqlgen/example/todo.Todo
+  ID:
+    model: # override the default id marshaller to use ints
+      - github.com/tinhtran24/gqlgen/graphql.IntID
+      - github.com/tinhtran24/gqlgen/graphql.ID

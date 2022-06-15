@@ -1,8 +1,6 @@
 package code
 
 import (
-	"go/build"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -15,38 +13,16 @@ func PkgAndType(name string) (string, string) {
 		return "", name
 	}
 
-	return strings.Join(parts[:len(parts)-1], "."), parts[len(parts)-1]
+	return NormalizeVendor(strings.Join(parts[:len(parts)-1], ".")), parts[len(parts)-1]
 }
 
 var modsRegex = regexp.MustCompile(`^(\*|\[\])*`)
 
-// NormalizeVendor takes a qualified package path and turns it into normal one.
-// eg .
-// github.com/foo/vendor/github.com/tinhtran24/gqlgen/graphql becomes
-// github.com/tinhtran24/gqlgen/graphql
 func NormalizeVendor(pkg string) string {
 	modifiers := modsRegex.FindAllString(pkg, 1)[0]
 	pkg = strings.TrimPrefix(pkg, modifiers)
 	parts := strings.Split(pkg, "/vendor/")
 	return modifiers + parts[len(parts)-1]
-}
-
-// QualifyPackagePath takes an import and fully qualifies it with a vendor dir, if one is required.
-// eg .
-// github.com/tinhtran24/gqlgen/graphql becomes
-// github.com/foo/vendor/github.com/tinhtran24/gqlgen/graphql
-//
-// x/tools/packages only supports 'qualified package paths' so this will need to be done prior to calling it
-// See https://github.com/golang/go/issues/30289
-func QualifyPackagePath(importPath string) string {
-	wd, _ := os.Getwd()
-
-	pkg, err := build.Import(importPath, wd, 0)
-	if err != nil {
-		return importPath
-	}
-
-	return pkg.ImportPath
 }
 
 var invalidPackageNameChar = regexp.MustCompile(`[^\w]`)

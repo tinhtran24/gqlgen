@@ -12,6 +12,10 @@ type Character interface {
 	IsCharacter()
 }
 
+type SearchResult interface {
+	IsSearchResult()
+}
+
 type FriendsEdge struct {
 	Cursor string    `json:"cursor"`
 	Node   Character `json:"node"`
@@ -21,10 +25,6 @@ type PageInfo struct {
 	StartCursor string `json:"startCursor"`
 	EndCursor   string `json:"endCursor"`
 	HasNextPage bool   `json:"hasNextPage"`
-}
-
-type SearchResult interface {
-	IsSearchResult()
 }
 
 type Starship struct {
@@ -43,6 +43,12 @@ const (
 	EpisodeEmpire  Episode = "EMPIRE"
 	EpisodeJedi    Episode = "JEDI"
 )
+
+var AllEpisode = []Episode{
+	EpisodeNewhope,
+	EpisodeEmpire,
+	EpisodeJedi,
+}
 
 func (e Episode) IsValid() bool {
 	switch e {
@@ -79,6 +85,11 @@ const (
 	LengthUnitMeter LengthUnit = "METER"
 	LengthUnitFoot  LengthUnit = "FOOT"
 )
+
+var AllLengthUnit = []LengthUnit{
+	LengthUnitMeter,
+	LengthUnitFoot,
+}
 
 func (e LengthUnit) IsValid() bool {
 	switch e {

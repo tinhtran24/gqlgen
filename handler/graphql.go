@@ -60,8 +60,6 @@ func (c *Config) newRequestContext(es graphql.ExecutableSchema, doc *ast.QueryDo
 
 	if hook := c.tracer; hook != nil {
 		reqCtx.Tracer = hook
-	} else {
-		reqCtx.Tracer = &graphql.NopTracer{}
 	}
 
 	if c.complexityLimit > 0 {
@@ -243,19 +241,23 @@ func CacheSize(size int) Option {
 	}
 }
 
-const DefaultCacheSize = 1000
-
-// WebsocketKeepAliveDuration allows you to reconfigure the keepAlive behavior.
-// By default, keep-alive is disabled.
+// WebsocketKeepAliveDuration allows you to reconfigure the keepalive behavior.
+// By default, keepalive is enabled with a DefaultConnectionKeepAlivePingInterval
+// duration. Set handler.connectionKeepAlivePingInterval = 0 to disable keepalive
+// altogether.
 func WebsocketKeepAliveDuration(duration time.Duration) Option {
 	return func(cfg *Config) {
 		cfg.connectionKeepAlivePingInterval = duration
 	}
 }
 
+const DefaultCacheSize = 1000
+const DefaultConnectionKeepAlivePingInterval = 25 * time.Second
+
 func GraphQL(exec graphql.ExecutableSchema, options ...Option) http.HandlerFunc {
 	cfg := &Config{
-		cacheSize: DefaultCacheSize,
+		cacheSize:                       DefaultCacheSize,
+		connectionKeepAlivePingInterval: DefaultConnectionKeepAlivePingInterval,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -269,7 +271,7 @@ func GraphQL(exec graphql.ExecutableSchema, options ...Option) http.HandlerFunc 
 	var cache *lru.Cache
 	if cfg.cacheSize > 0 {
 		var err error
-		cache, err = lru.New(DefaultCacheSize)
+		cache, err = lru.New(cfg.cacheSize)
 		if err != nil {
 			// An error is only returned for non-positive cache size
 			// and we already checked for that.
@@ -305,12 +307,11 @@ func (gh *graphqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if strings.Contains(r.Header.Get("Upgrade"), "websocket") {
-		connectWs(gh.exec, w, r, gh.cfg)
+		connectWs(gh.exec, w, r, gh.cfg, gh.cache)
 		return
 	}
 
-	ctx := r.Context()
-
+	w.Header().Set("Content-Type", "application/json")
 	var reqParams params
 	switch r.Method {
 	case http.MethodGet:
@@ -319,20 +320,21 @@ func (gh *graphqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if variables := r.URL.Query().Get("variables"); variables != "" {
 			if err := jsonDecode(strings.NewReader(variables), &reqParams.Variables); err != nil {
-				gh.sendErrorf(ctx, w, http.StatusBadRequest, "variables could not be decoded")
+				sendErrorf(w, http.StatusBadRequest, "variables could not be decoded")
 				return
 			}
 		}
 	case http.MethodPost:
 		if err := jsonDecode(r.Body, &reqParams); err != nil {
-			gh.sendErrorf(ctx, w, http.StatusBadRequest, "json body could not be decoded: "+err.Error())
+			sendErrorf(w, http.StatusBadRequest, "json body could not be decoded: "+err.Error())
 			return
 		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+
+	ctx := r.Context()
 
 	var doc *ast.QueryDocument
 	var cacheHit bool
@@ -349,7 +351,7 @@ func (gh *graphqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		CachedDoc: doc,
 	})
 	if gqlErr != nil {
-		gh.sendError(ctx, w, http.StatusUnprocessableEntity, gqlErr)
+		sendError(w, http.StatusUnprocessableEntity, gqlErr)
 		return
 	}
 
@@ -361,7 +363,7 @@ func (gh *graphqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Variables:     reqParams.Variables,
 	})
 	if len(listErr) != 0 {
-		gh.sendError(ctx, w, http.StatusUnprocessableEntity, listErr...)
+		sendError(w, http.StatusUnprocessableEntity, listErr...)
 		return
 	}
 
@@ -375,12 +377,12 @@ func (gh *graphqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			userErr := reqCtx.Recover(ctx, err)
-			gh.sendErrorf(ctx, w, http.StatusUnprocessableEntity, userErr.Error())
+			sendErrorf(w, http.StatusUnprocessableEntity, userErr.Error())
 		}
 	}()
 
 	if reqCtx.ComplexityLimit > 0 && reqCtx.OperationComplexity > reqCtx.ComplexityLimit {
-		gh.sendErrorf(ctx, w, http.StatusUnprocessableEntity, "operation has complexity %d, which exceeds the limit of %d", reqCtx.OperationComplexity, reqCtx.ComplexityLimit)
+		sendErrorf(w, http.StatusUnprocessableEntity, "operation has complexity %d, which exceeds the limit of %d", reqCtx.OperationComplexity, reqCtx.ComplexityLimit)
 		return
 	}
 
@@ -398,7 +400,7 @@ func (gh *graphqlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Write(b)
 	default:
-		gh.sendErrorf(ctx, w, http.StatusBadRequest, "unsupported operation type")
+		sendErrorf(w, http.StatusBadRequest, "unsupported operation type")
 	}
 }
 
@@ -463,27 +465,6 @@ func jsonDecode(r io.Reader, val interface{}) error {
 	dec := json.NewDecoder(r)
 	dec.UseNumber()
 	return dec.Decode(val)
-}
-
-func (gh *graphqlHandler) sendError(ctx context.Context, w http.ResponseWriter, code int, errors ...*gqlerror.Error) {
-	if gh.cfg.errorPresenter != nil {
-		var newErrors []*gqlerror.Error
-		for _, err := range errors {
-			newErr := gh.cfg.errorPresenter(ctx, err)
-			newErrors = append(newErrors, newErr)
-		}
-		errors = newErrors
-	}
-	w.WriteHeader(code)
-	b, err := json.Marshal(&graphql.Response{Errors: errors})
-	if err != nil {
-		panic(err)
-	}
-	w.Write(b)
-}
-
-func (gh *graphqlHandler) sendErrorf(ctx context.Context, w http.ResponseWriter, code int, format string, args ...interface{}) {
-	gh.sendError(ctx, w, code, &gqlerror.Error{Message: fmt.Sprintf(format, args...)})
 }
 
 func sendError(w http.ResponseWriter, code int, errors ...*gqlerror.Error) {

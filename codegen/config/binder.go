@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"regexp"
+	"strings"
+
+	"github.com/tinhtran24/gqlgen/codegen/templates"
 
 	"github.com/pkg/errors"
-	"github.com/tinhtran24/gqlgen/codegen/templates"
 	"github.com/tinhtran24/gqlgen/internal/code"
 	"github.com/vektah/gqlparser/ast"
 	"golang.org/x/tools/go/packages"
@@ -24,14 +27,6 @@ func (c *Config) NewBinder(s *ast.Schema) (*Binder, error) {
 	pkgs, err := packages.Load(&packages.Config{Mode: packages.LoadTypes | packages.LoadSyntax}, c.Models.ReferencedPackages()...)
 	if err != nil {
 		return nil, err
-	}
-
-	for _, p := range pkgs {
-		for _, e := range p.Errors {
-			if e.Kind == packages.ListError {
-				return nil, p.Errors[0]
-			}
-		}
 	}
 
 	return &Binder{
@@ -76,7 +71,7 @@ func (b *Binder) FindType(pkgName string, typeName string) (types.Type, error) {
 
 func (b *Binder) getPkg(find string) *packages.Package {
 	for _, p := range b.pkgs {
-		if code.NormalizeVendor(find) == code.NormalizeVendor(p.PkgPath) {
+		if normalizeVendor(find) == normalizeVendor(p.PkgPath) {
 			return p
 		}
 	}
@@ -89,7 +84,7 @@ var InterfaceType = types.NewInterfaceType(nil, nil)
 func (b *Binder) DefaultUserObject(name string) (types.Type, error) {
 	models := b.cfg.Models[name].Model
 	if len(models) == 0 {
-		return nil, fmt.Errorf(name + " not found in typemap")
+		return nil, fmt.Errorf(name + " not found")
 	}
 
 	if models[0] == "map[string]interface{}" {
@@ -158,15 +153,22 @@ func (b *Binder) PointerTo(ref *TypeReference) *TypeReference {
 	newRef := &TypeReference{
 		GO:          types.NewPointer(ref.GO),
 		GQL:         ref.GQL,
-		CastType:    ref.CastType,
 		Definition:  ref.Definition,
 		Unmarshaler: ref.Unmarshaler,
 		Marshaler:   ref.Marshaler,
-		IsMarshaler: ref.IsMarshaler,
 	}
 
 	b.References = append(b.References, newRef)
 	return newRef
+}
+
+var modsRegex = regexp.MustCompile(`^(\*|\[\])*`)
+
+func normalizeVendor(pkg string) string {
+	modifiers := modsRegex.FindAllString(pkg, 1)[0]
+	pkg = strings.TrimPrefix(pkg, modifiers)
+	parts := strings.Split(pkg, "/vendor/")
+	return modifiers + parts[len(parts)-1]
 }
 
 // TypeReference is used by args and field types. The Definition can refer to both input and output types.
@@ -174,10 +176,8 @@ type TypeReference struct {
 	Definition  *ast.Definition
 	GQL         *ast.Type
 	GO          types.Type
-	CastType    types.Type  // Before calling marshalling functions cast from/to this base type
 	Marshaler   *types.Func // When using external marshalling functions this will point to the Marshal function
 	Unmarshaler *types.Func // When using external marshalling functions this will point to the Unmarshal function
-	IsMarshaler bool        // Does the type implement graphql.Marshaler and graphql.Unmarshaler
 }
 
 func (ref *TypeReference) Elem() *TypeReference {
@@ -185,11 +185,9 @@ func (ref *TypeReference) Elem() *TypeReference {
 		return &TypeReference{
 			GO:          p.Elem(),
 			GQL:         ref.GQL,
-			CastType:    ref.CastType,
 			Definition:  ref.Definition,
 			Unmarshaler: ref.Unmarshaler,
 			Marshaler:   ref.Marshaler,
-			IsMarshaler: ref.IsMarshaler,
 		}
 	}
 
@@ -197,11 +195,9 @@ func (ref *TypeReference) Elem() *TypeReference {
 		return &TypeReference{
 			GO:          s.Elem(),
 			GQL:         ref.GQL.Elem,
-			CastType:    ref.CastType,
 			Definition:  ref.Definition,
 			Unmarshaler: ref.Unmarshaler,
 			Marshaler:   ref.Marshaler,
-			IsMarshaler: ref.IsMarshaler,
 		}
 	}
 	return nil
@@ -210,13 +206,6 @@ func (ref *TypeReference) Elem() *TypeReference {
 func (t *TypeReference) IsPtr() bool {
 	_, isPtr := t.GO.(*types.Pointer)
 	return isPtr
-}
-
-func (t *TypeReference) IsNilable() bool {
-	_, isPtr := t.GO.(*types.Pointer)
-	_, isMap := t.GO.(*types.Map)
-	_, isInterface := t.GO.(*types.Interface)
-	return isPtr || isMap || isInterface
 }
 
 func (t *TypeReference) IsSlice() bool {
@@ -251,6 +240,44 @@ func (t *TypeReference) HasIsZero() bool {
 	for i := 0; i < namedType.NumMethods(); i++ {
 		switch namedType.Method(i).Name() {
 		case "IsZero":
+			return true
+		}
+	}
+	return false
+}
+
+func (t *TypeReference) SelfMarshalling() bool {
+	it := t.GO
+	if ptr, isPtr := it.(*types.Pointer); isPtr {
+		it = ptr.Elem()
+	}
+	namedType, ok := it.(*types.Named)
+	if !ok {
+		return false
+	}
+
+	for i := 0; i < namedType.NumMethods(); i++ {
+		switch namedType.Method(i).Name() {
+		case "MarshalGQL":
+			return true
+		}
+	}
+	return false
+}
+
+func (t *TypeReference) SelfUnmarshalling() bool {
+	it := t.GO
+	if ptr, isPtr := it.(*types.Pointer); isPtr {
+		it = ptr.Elem()
+	}
+	namedType, ok := it.(*types.Named)
+	if !ok {
+		return false
+	}
+
+	for i := 0; i < namedType.NumMethods(); i++ {
+		switch namedType.Method(i).Name() {
+		case "UnmarshalGQL":
 			return true
 		}
 	}
@@ -319,10 +346,6 @@ func (b *Binder) TypeReference(schemaType *ast.Type, bindTarget types.Type) (ret
 		}
 	}()
 
-	if len(b.cfg.Models[schemaType.Name()].Model) == 0 {
-		return nil, fmt.Errorf("%s was not found", schemaType.Name())
-	}
-
 	for _, model := range b.cfg.Models[schemaType.Name()].Model {
 		if model == "map[string]interface{}" {
 			if !isMap(bindTarget) {
@@ -365,27 +388,11 @@ func (b *Binder) TypeReference(schemaType *ast.Type, bindTarget types.Type) (ret
 			ref.GO = fun.Type().(*types.Signature).Params().At(0).Type()
 			ref.Marshaler = fun
 			ref.Unmarshaler = types.NewFunc(0, fun.Pkg(), "Unmarshal"+typeName, nil)
-		} else if hasMethod(obj.Type(), "MarshalGQL") && hasMethod(obj.Type(), "UnmarshalGQL") {
-			ref.GO = obj.Type()
-			ref.IsMarshaler = true
-		} else if underlying := basicUnderlying(obj.Type()); underlying != nil && underlying.Kind() == types.String {
-			// Special case for named types wrapping strings. Used by default enum implementations.
-
-			ref.GO = obj.Type()
-			ref.CastType = underlying
-
-			underlyingRef, err := b.TypeReference(&ast.Type{NamedType: "String"}, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			ref.Marshaler = underlyingRef.Marshaler
-			ref.Unmarshaler = underlyingRef.Unmarshaler
 		} else {
 			ref.GO = obj.Type()
 		}
 
-		ref.GO = b.CopyModifiersFromAst(schemaType, ref.GO)
+		ref.GO = b.CopyModifiersFromAst(schemaType, def.Kind != ast.Interface, ref.GO)
 
 		if bindTarget != nil {
 			if err = code.CompatibleTypes(ref.GO, bindTarget); err != nil {
@@ -397,55 +404,17 @@ func (b *Binder) TypeReference(schemaType *ast.Type, bindTarget types.Type) (ret
 		return ref, nil
 	}
 
-	return nil, fmt.Errorf("%s has type compatible with %s", schemaType.Name(), bindTarget.String())
+	return nil, fmt.Errorf("not found")
 }
 
-func (b *Binder) CopyModifiersFromAst(t *ast.Type, base types.Type) types.Type {
+func (b *Binder) CopyModifiersFromAst(t *ast.Type, usePtr bool, base types.Type) types.Type {
 	if t.Elem != nil {
-		return types.NewSlice(b.CopyModifiersFromAst(t.Elem, base))
+		return types.NewSlice(b.CopyModifiersFromAst(t.Elem, usePtr, base))
 	}
 
-	var isInterface bool
-	if named, ok := base.(*types.Named); ok {
-		_, isInterface = named.Underlying().(*types.Interface)
-	}
-
-	if !isInterface && !t.NonNull {
+	if !t.NonNull && usePtr {
 		return types.NewPointer(base)
 	}
 
 	return base
-}
-
-func hasMethod(it types.Type, name string) bool {
-	if ptr, isPtr := it.(*types.Pointer); isPtr {
-		it = ptr.Elem()
-	}
-	namedType, ok := it.(*types.Named)
-	if !ok {
-		return false
-	}
-
-	for i := 0; i < namedType.NumMethods(); i++ {
-		if namedType.Method(i).Name() == name {
-			return true
-		}
-	}
-	return false
-}
-
-func basicUnderlying(it types.Type) *types.Basic {
-	if ptr, isPtr := it.(*types.Pointer); isPtr {
-		it = ptr.Elem()
-	}
-	namedType, ok := it.(*types.Named)
-	if !ok {
-		return nil
-	}
-
-	if basic, ok := namedType.Underlying().(*types.Basic); ok {
-		return basic
-	}
-
-	return nil
 }

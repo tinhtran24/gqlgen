@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/tinhtran24/gqlgen/codegen"
+	"github.com/tinhtran24/gqlgen/api"
+	"github.com/tinhtran24/gqlgen/codegen/config"
 	"github.com/urfave/cli"
 )
 
@@ -18,43 +18,27 @@ var genCmd = cli.Command{
 		cli.StringFlag{Name: "config, c", Usage: "the config filename"},
 	},
 	Action: func(ctx *cli.Context) {
-		var config *codegen.Config
+		var cfg *config.Config
 		var err error
-		if configFilename := ctx.String("config"); configFilename != "" {
-			config, err = codegen.LoadConfig(configFilename)
+		if configFilename := ctx.String("gen"); configFilename != "" {
+			cfg, err = config.LoadConfig(configFilename)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				os.Exit(1)
 			}
 		} else {
-			config, err = codegen.LoadConfigFromDefaultLocations()
+			cfg, err = config.LoadConfigFromDefaultLocations()
 			if os.IsNotExist(errors.Cause(err)) {
-				config = codegen.DefaultConfig()
+				cfg = config.DefaultConfig()
 			} else if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
+				os.Exit(2)
 			}
 		}
 
-		for _, filename := range config.SchemaFilename {
-			var schemaRaw []byte
-			schemaRaw, err = ioutil.ReadFile(filename)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "unable to open schema: "+err.Error())
-				os.Exit(1)
-			}
-			config.SchemaStr[filename] = string(schemaRaw)
-		}
-
-		if err = config.Check(); err != nil {
-			fmt.Fprintln(os.Stderr, "invalid config format: "+err.Error())
-			os.Exit(1)
-		}
-
-		err = codegen.Generate(*config)
-		if err != nil {
+		if err = api.Generate(cfg); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(2)
+			os.Exit(3)
 		}
 	},
 }

@@ -249,7 +249,7 @@ func (tm TypeMap) ReferencedPackages() []string {
 			if pkg == "" || inStrSlice(pkgs, pkg) {
 				continue
 			}
-			pkgs = append(pkgs, code.QualifyPackagePath(pkg))
+			pkgs = append(pkgs, pkg)
 		}
 	}
 
@@ -339,14 +339,12 @@ func (c *Config) InjectBuiltins(s *ast.Schema) {
 		"__EnumValue":         {Model: StringList{"github.com/tinhtran24/gqlgen/graphql/introspection.EnumValue"}},
 		"__InputValue":        {Model: StringList{"github.com/tinhtran24/gqlgen/graphql/introspection.InputValue"}},
 		"__Schema":            {Model: StringList{"github.com/tinhtran24/gqlgen/graphql/introspection.Schema"}},
+		"Int":                 {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Int"}},
 		"Float":               {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Float"}},
 		"String":              {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.String"}},
 		"Boolean":             {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Boolean"}},
-		"Int": {Model: StringList{
-			"github.com/tinhtran24/gqlgen/graphql.Int",
-			"github.com/tinhtran24/gqlgen/graphql.Int32",
-			"github.com/tinhtran24/gqlgen/graphql.Int64",
-		}},
+		"Time":                {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Time"}},
+		"Map":                 {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Map"}},
 		"ID": {
 			Model: StringList{
 				"github.com/tinhtran24/gqlgen/graphql.ID",
@@ -357,18 +355,6 @@ func (c *Config) InjectBuiltins(s *ast.Schema) {
 
 	for typeName, entry := range builtins {
 		if !c.Models.Exists(typeName) {
-			c.Models[typeName] = entry
-		}
-	}
-
-	// These are additional types that are injected if defined in the schema as scalars.
-	extraBuiltins := TypeMap{
-		"Time": {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Time"}},
-		"Map":  {Model: StringList{"github.com/tinhtran24/gqlgen/graphql.Map"}},
-	}
-
-	for typeName, entry := range extraBuiltins {
-		if t, ok := s.Types[typeName]; ok && t.Kind == ast.Scalar {
 			c.Models[typeName] = entry
 		}
 	}

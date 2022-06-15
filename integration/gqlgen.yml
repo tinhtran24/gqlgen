@@ -16,7 +16,7 @@ models:
   Viewer:
     model: github.com/tinhtran24/gqlgen/integration/models-go.Viewer
   User:
-    model: remote_api.User
+    model: github.com/tinhtran24/gqlgen/integration/remote_api.User
     fields:
       likes:
         resolver: true

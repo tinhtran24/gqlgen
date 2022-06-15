@@ -1,4 +1,4 @@
-//go:generate gorunpkg github.com/tinhtran24/gqlgen
+//go:generate go run ../../testdata/gqlgen.go
 
 package dataloader
 
