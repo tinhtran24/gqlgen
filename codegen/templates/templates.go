@@ -50,7 +50,7 @@ func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
 			name = filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator))) + filename
 			t, err = t.New(name).Parse(data)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			roots = append(roots, name)
 			return nil

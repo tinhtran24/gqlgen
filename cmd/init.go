@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/tinhtran24/gqlgen/codegen"
@@ -69,8 +71,14 @@ var initCmd = cli.Command{
 }
 
 func GenerateGraphServer(config *codegen.Config, serverFilename string) {
+	_ = syscall.Unlink(config.Exec.Filename)
+	_ = syscall.Unlink(config.Model.Filename)
+
 	for _, filename := range config.SchemaFilename {
-		schemaRaw, err := ioutil.ReadFile(filename)
+		filename = filepath.ToSlash(filename)
+		var err error
+		var schemaRaw []byte
+		schemaRaw, err = ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "unable to open schema: "+err.Error())
 			os.Exit(1)

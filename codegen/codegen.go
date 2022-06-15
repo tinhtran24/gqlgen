@@ -1,6 +1,8 @@
 package codegen
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -150,10 +152,19 @@ func (cfg *Config) normalize() error {
 			cfg.Models[typeName] = entry
 		}
 	}
-
+	schemaStrings := map[string]string{}
 	var sources []*ast.Source
 	for _, filename := range cfg.SchemaFilename {
-		sources = append(sources, &ast.Source{Name: filename, Input: cfg.SchemaStr[filename]})
+		filename = filepath.ToSlash(filename)
+		var err error
+		var schemaRaw []byte
+		schemaRaw, err = ioutil.ReadFile(filename)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "unable to open schema: "+err.Error())
+			os.Exit(1)
+		}
+		schemaStrings[filename] = string(schemaRaw)
+		sources = append(sources, &ast.Source{Name: filename, Input: schemaStrings[filename]})
 	}
 
 	var err *gqlerror.Error
