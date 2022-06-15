@@ -12,7 +12,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/stretchr/testify v1.7.2
 	github.com/urfave/cli v1.22.9
-	github.com/vektah/gqlparser v1.3.1
+	github.com/vektah/gqlparser v1.1.2
 	golang.org/x/tools v0.1.11
 	gopkg.in/yaml.v2 v2.4.0
 	sourcegraph.com/sourcegraph/appdash v0.0.0-20211028080628-e2786a622600

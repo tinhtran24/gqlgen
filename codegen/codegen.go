@@ -26,6 +26,7 @@ func Generate(cfg Config) error {
 	if err != nil {
 		return errors.Wrap(err, "model plan failed")
 	}
+
 	if len(modelsBuild.Models) > 0 || len(modelsBuild.Enums) > 0 {
 		if err = templates.RenderToFile("models.gotpl", cfg.Model.Filename, modelsBuild); err != nil {
 			return err

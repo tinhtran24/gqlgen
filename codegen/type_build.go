@@ -67,7 +67,7 @@ func pkgAndType(name string) (string, string) {
 		return "", name
 	}
 
-	return normalizeVendor(strings.Join(parts[:len(parts)-1], ".")), parts[len(parts)-1]
+	return strings.Join(parts[:len(parts)-1], "."), parts[len(parts)-1]
 }
 
 func (n NamedTypes) getType(t *ast.Type) *Type {

@@ -43,7 +43,7 @@ func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
 	var roots []string
 
 	for filename, data := range data {
-		filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
@@ -55,6 +55,9 @@ func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
 			roots = append(roots, name)
 			return nil
 		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	buf := &bytes.Buffer{}
