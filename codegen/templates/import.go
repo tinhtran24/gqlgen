@@ -3,7 +3,10 @@ package templates
 import (
 	"fmt"
 	"go/build"
+	"go/types"
 	"strconv"
+
+	"github.com/tinhtran24/gqlgen/internal/code"
 )
 
 type Import struct {
@@ -75,17 +78,19 @@ func (s *Imports) Lookup(path string) string {
 		return ""
 	}
 
+	path = code.NormalizeVendor(path)
+
+	// if we are referencing our own package we dont need an import
+	if code.ImportPathForDir(s.destDir) == path {
+		return ""
+	}
+
 	if existing := s.findByPath(path); existing != nil {
 		return existing.Alias
 	}
 
-	pkg, err := build.Default.Import(path, s.destDir, 0)
-	if err != nil {
-		panic(err)
-	}
-
 	imp := &Import{
-		Name: pkg.Name,
+		Name: code.NameForPackage(path),
 		Path: path,
 	}
 	s.imports = append(s.imports, imp)
@@ -120,4 +125,10 @@ func (s Imports) findByAlias(alias string) *Import {
 		}
 	}
 	return nil
+}
+
+func (s *Imports) LookupType(t types.Type) string {
+	return types.TypeString(t, func(i *types.Package) string {
+		return s.Lookup(i.Path())
+	})
 }
