@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"fmt"
-	"github.com/tinhtran24/gqlgen/internal/code"
 	"go/build"
 	"io/ioutil"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/internal/code"
 	"github.com/vektah/gqlparser/ast"
 	"gopkg.in/yaml.v2"
 )
