@@ -42,7 +42,7 @@ func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
 	})
 	var roots []string
 
-	for filename, data := range data {
+	for filename, data := range dataMap {
 		err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -170,7 +170,7 @@ func prefixLines(prefix, s string) string {
 	return prefix + strings.Replace(s, "\n", "\n"+prefix, -1)
 }
 
-func RenderToFile(tpl string, filename string, data interface{}) error {
+func RenderToFile(tpl string, filename string, tpldata interface{}) error {
 	if CurrentImports != nil {
 		panic(fmt.Errorf("recursive or concurrent call to RenderToFile detected"))
 	}
@@ -192,44 +192,33 @@ func RenderToFile(tpl string, filename string, data interface{}) error {
 	var roots []string
 	// load all the templates in the directory
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		name := filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator)))
-		if !strings.HasSuffix(info.Name(), tpl) {
+		for file, data := range dataMap {
+			if err != nil {
+				return err
+			}
+			name := filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator)))
+			if !strings.HasSuffix(info.Name(), tpl) {
+				return nil
+			}
+			t, err = t.New(name).Parse(data)
+			if err != nil {
+				return errors.Wrap(err, file)
+			}
+			if strings.Contains(tpl, file) {
+				roots = append(roots, name)
+			}
 			return nil
 		}
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		t, err = t.New(name).Parse(string(b))
-		if err != nil {
-			return errors.Wrap(err, filename)
-		}
-
-		roots = append(roots, name)
 		return nil
 	})
+
 	if err != nil {
 		return errors.Wrap(err, "locating templates")
 	}
-	// then execute all the important looking ones in order, adding them to the same file
-	sort.Slice(roots, func(i, j int) bool {
-		// important files go first
-		if strings.HasSuffix(roots[i], "!.gotpl") {
-			return true
-		}
-		if strings.HasSuffix(roots[j], "!.gotpl") {
-			return false
-		}
-		return roots[i] < roots[j]
-	})
 
 	var buf bytes.Buffer
 	for _, root := range roots {
-		err = t.Lookup(root).Execute(&buf, data)
+		err = t.Lookup(root).Execute(&buf, tpldata)
 		if err != nil {
 			return errors.Wrap(err, root)
 		}

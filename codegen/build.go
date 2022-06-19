@@ -6,7 +6,8 @@ import (
 	"go/build"
 	"go/types"
 	"golang.org/x/tools/go/loader"
-	"os"
+	"path"
+	"runtime"
 )
 
 type Build struct {
@@ -182,8 +183,11 @@ func (cfg *Config) newLoaderWithoutErrors() loader.Config {
 }
 
 func resolvePkg(pkgName string) (string, error) {
-	cwd, _ := os.Getwd()
-
+	_, filename, _, ok := runtime.Caller(1)
+	if !ok {
+		return "", errors.New("unable to get the current filename")
+	}
+	cwd := path.Dir(filename)
 	pkg, err := build.Default.Import(pkgName, cwd, build.FindOnly)
 	if err != nil {
 		return "", err
