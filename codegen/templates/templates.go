@@ -170,7 +170,7 @@ func prefixLines(prefix, s string) string {
 	return prefix + strings.Replace(s, "\n", "\n"+prefix, -1)
 }
 
-func RenderToFile(tpl string, filename string, tpldata interface{}) error {
+func RenderToFile(tpl string, filename string, data interface{}) error {
 	if CurrentImports != nil {
 		panic(fmt.Errorf("recursive or concurrent call to RenderToFile detected"))
 	}
@@ -192,33 +192,33 @@ func RenderToFile(tpl string, filename string, tpldata interface{}) error {
 	var roots []string
 	// load all the templates in the directory
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		for file, data := range dataMap {
-			if err != nil {
-				return err
-			}
-			name := filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator)))
-			if !strings.HasSuffix(info.Name(), tpl) {
-				return nil
-			}
-			t, err = t.New(name).Parse(data)
-			if err != nil {
-				return errors.Wrap(err, file)
-			}
-			if strings.Contains(tpl, file) {
-				roots = append(roots, name)
-			}
+		if err != nil {
+			return err
+		}
+		name := filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator)))
+		if !strings.HasSuffix(info.Name(), tpl) {
 			return nil
 		}
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		t, err = t.New(name).Parse(string(b))
+		if err != nil {
+			return errors.Wrap(err, filename)
+		}
+
+		roots = append(roots, name)
 		return nil
 	})
-
 	if err != nil {
 		return errors.Wrap(err, "locating templates")
 	}
 
 	var buf bytes.Buffer
 	for _, root := range roots {
-		err = t.Lookup(root).Execute(&buf, tpldata)
+		err = t.Lookup(root).Execute(&buf, data)
 		if err != nil {
 			return errors.Wrap(err, root)
 		}

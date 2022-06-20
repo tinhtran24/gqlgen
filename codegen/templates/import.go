@@ -2,7 +2,7 @@ package templates
 
 import (
 	"fmt"
-	"go/types"
+	"go/build"
 	"strconv"
 
 	"github.com/tinhtran24/gqlgen/internal/code"
@@ -48,10 +48,13 @@ func (s *Imports) Reserve(path string, aliases ...string) (string, error) {
 		return "", nil
 	}
 
-	name := code.NameForPackage(path)
+	pkg, err := build.Default.Import(path, s.destDir, 0)
+	if err != nil {
+		panic(err)
+	}
 	var alias string
 	if len(aliases) != 1 {
-		alias = name
+		alias = pkg.Name
 	} else {
 		alias = aliases[0]
 	}
@@ -68,7 +71,7 @@ func (s *Imports) Reserve(path string, aliases ...string) (string, error) {
 	}
 
 	s.imports = append(s.imports, &Import{
-		Name:  name,
+		Name:  pkg.Name,
 		Path:  path,
 		Alias: alias,
 	})
@@ -92,8 +95,13 @@ func (s *Imports) Lookup(path string) string {
 		return existing.Alias
 	}
 
+	pkg, err := build.Default.Import(path, s.destDir, 0)
+	if err != nil {
+		panic(err)
+	}
+
 	imp := &Import{
-		Name: code.NameForPackage(path),
+		Name: pkg.Name,
 		Path: path,
 	}
 	s.imports = append(s.imports, imp)
@@ -128,10 +136,4 @@ func (s Imports) findByAlias(alias string) *Import {
 		}
 	}
 	return nil
-}
-
-func (s *Imports) LookupType(t types.Type) string {
-	return types.TypeString(t, func(i *types.Package) string {
-		return s.Lookup(i.Path())
-	})
 }
