@@ -3,12 +3,13 @@ package codegen
 import (
 	"fmt"
 	"go/build"
+	"go/parser"
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"os"
 
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/go/packages"
 )
 
 type Build struct {
@@ -165,10 +166,18 @@ func (cfg *Config) validate() error {
 	return err
 }
 
-func (cfg *Config) newLoaderWithErrors() loader.Config {
-	conf := loader.Config{}
+var mode = packages.NeedName |
+	packages.NeedFiles |
+	packages.NeedImports |
+	packages.NeedTypes |
+	packages.NeedSyntax |
+	packages.NeedTypesInfo |
+	packages.NeedModule |
+	packages.NeedDeps
 
-	pkgs, err := packages.Load(&packages.Config{Mode: packages.LoadTypes | packages.LoadSyntax}, cfg.Models.referencedPackages()...)
+func (cfg *Config) newLoaderWithErrors() loader.Config {
+	conf := loader.Config{ParserMode: parser.ParseComments}
+	pkgs, err := packages.Load(&packages.Config{Mode: mode}, cfg.Models.referencedPackages()...)
 	if err != nil {
 		return conf
 	}
