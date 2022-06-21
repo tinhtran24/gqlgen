@@ -13,13 +13,17 @@ func (cfg *Config) buildInputs(namedTypes NamedTypes, prog *loader.Program) (Obj
 	var inputs Objects
 
 	for _, typ := range cfg.schema.Types {
+
 		switch typ.Kind {
 		case ast.InputObject:
 			input, err := cfg.buildInput(namedTypes, typ)
 			if err != nil {
 				return nil, err
 			}
-
+			packageName := input.Package
+			if packageName == cfg.Model.Package {
+				packageName = ""
+			}
 			def, err := findGoType(prog, input.Package, input.GoType)
 			if err != nil {
 				return nil, errors.Wrap(err, "cannot find type")

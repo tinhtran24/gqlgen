@@ -16,10 +16,6 @@ func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Ob
 		return nil, nil
 	}
 	fullName := typeName
-	if pkgName != "" {
-		fullName = pkgName + "." + typeName
-	}
-
 	pkgName, err := resolvePkg(pkgName)
 	if err != nil {
 		return nil, errors.Errorf("unable to resolve package for %s: %s\n", fullName, err.Error())
