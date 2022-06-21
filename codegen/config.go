@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"fmt"
-	"go/build"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -144,15 +143,8 @@ func (c *PackageConfig) normalize() error {
 	// If Package is not set, first attempt to load the package at the output dir. If that fails
 	// fallback to just the base dir name of the output filename.
 	if c.Package == "" {
-		cwd, _ := os.Getwd()
-		pkg, _ := build.Default.Import(c.ImportPath(), cwd, 0)
-		if pkg.Name != "" {
-			c.Package = pkg.Name
-		} else {
-			c.Package = filepath.Base(c.Dir())
-		}
+		c.Package = code.NameForPackage(c.ImportPath())
 	}
-	c.Package = sanitizePackageName(c.Package)
 	return nil
 }
 
