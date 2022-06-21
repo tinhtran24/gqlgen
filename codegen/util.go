@@ -16,7 +16,7 @@ func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Ob
 		return nil, nil
 	}
 	fullName := typeName
-	if pkgName != "" {
+	if pkgName != "" && pkgName != "." {
 		fullName = pkgName + "." + typeName
 	}
 
@@ -34,8 +34,20 @@ func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Ob
 		if astNode.Name != typeName || def.Parent() == nil || def.Parent() != pkg.Pkg.Scope() {
 			continue
 		}
-
+		if astNode.Name == "Marshal"+typeName {
+			return def, nil
+		}
 		return def, nil
+	}
+	for astNode, def := range pkg.Defs {
+		// only look at defs in the top scope
+		if def == nil || def.Parent() == nil || def.Parent() != pkg.Pkg.Scope() {
+			continue
+		}
+
+		if astNode.Name == typeName {
+			return def, nil
+		}
 	}
 
 	return nil, errors.Errorf("unable to find type %s\n", fullName)

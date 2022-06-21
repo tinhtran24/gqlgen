@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,10 +24,6 @@ import (
 var CurrentImports *Imports
 
 func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
-	// load path relative to calling source file
-	_, callerFile, _, _ := runtime.Caller(1)
-	rootDir := filepath.Dir(callerFile)
-
 	t := template.New("").Funcs(template.FuncMap{
 		"ucFirst":       ucFirst,
 		"lcFirst":       lcFirst,
@@ -40,23 +35,11 @@ func Run(name string, tpldata interface{}) (*bytes.Buffer, error) {
 		"reserveImport": CurrentImports.Reserve,
 		"lookupImport":  CurrentImports.Lookup,
 	})
-	var roots []string
 
 	for filename, data := range data {
-		err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			name = filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator))) + filename
-			t, err = t.New(name).Parse(data)
-			if err != nil {
-				panic(err)
-			}
-			roots = append(roots, name)
-			return nil
-		})
+		_, err := t.New(filename).Parse(data)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 	}
 
@@ -175,64 +158,11 @@ func RenderToFile(tpl string, filename string, data interface{}) error {
 		panic(fmt.Errorf("recursive or concurrent call to RenderToFile detected"))
 	}
 	CurrentImports = &Imports{destDir: filepath.Dir(filename)}
-	// load path relative to calling source file
-	_, callerFile, _, _ := runtime.Caller(1)
-	rootDir := filepath.Dir(callerFile)
-	t := template.New("").Funcs(template.FuncMap{
-		"ucFirst":       ucFirst,
-		"lcFirst":       lcFirst,
-		"quote":         strconv.Quote,
-		"rawQuote":      rawQuote,
-		"toCamel":       ToCamel,
-		"dump":          dump,
-		"prefixLines":   prefixLines,
-		"reserveImport": CurrentImports.Reserve,
-		"lookupImport":  CurrentImports.Lookup,
-	})
-	var roots []string
-	// load all the templates in the directory
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		name := filepath.ToSlash(strings.TrimPrefix(path, rootDir+string(os.PathSeparator)))
-		if !strings.HasSuffix(info.Name(), tpl) {
-			return nil
-		}
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
 
-		t, err = t.New(name).Parse(string(b))
-		if err != nil {
-			return errors.Wrap(err, filename)
-		}
-
-		roots = append(roots, name)
-		return nil
-	})
+	var buf *bytes.Buffer
+	buf, err := Run(tpl, data)
 	if err != nil {
-		return errors.Wrap(err, "locating templates")
-	}
-	// then execute all the important looking ones in order, adding them to the same file
-	sort.Slice(roots, func(i, j int) bool {
-		// important files go first
-		if strings.HasSuffix(roots[i], "!.gotpl") {
-			return true
-		}
-		if strings.HasSuffix(roots[j], "!.gotpl") {
-			return false
-		}
-		return roots[i] < roots[j]
-	})
-
-	var buf bytes.Buffer
-	for _, root := range roots {
-		err = t.Lookup(root).Execute(&buf, data)
-		if err != nil {
-			return errors.Wrap(err, root)
-		}
+		return errors.Wrap(err, filename+" generation failed")
 	}
 
 	b := bytes.Replace(buf.Bytes(), []byte("%%%IMPORTS%%%"), []byte(CurrentImports.String()), -1)
