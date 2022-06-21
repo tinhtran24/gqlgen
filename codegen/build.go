@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/build"
 	"go/types"
+	"golang.org/x/tools/go/packages"
 	"os"
 
 	"github.com/pkg/errors"
@@ -167,8 +168,12 @@ func (cfg *Config) validate() error {
 func (cfg *Config) newLoaderWithErrors() loader.Config {
 	conf := loader.Config{}
 
-	for _, pkg := range cfg.Models.referencedPackages() {
-		conf.Import(pkg)
+	pkgs, err := packages.Load(&packages.Config{Mode: packages.LoadTypes | packages.LoadSyntax}, cfg.Models.referencedPackages()...)
+	if err != nil {
+		return conf
+	}
+	for _, val := range pkgs {
+		conf.Import(val.PkgPath)
 	}
 	return conf
 }

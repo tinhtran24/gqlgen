@@ -250,7 +250,7 @@ func (tm TypeMap) referencedPackages() []string {
 		if pkg == "" || inStrSlice(pkgs, pkg) {
 			continue
 		}
-		pkgs = append(pkgs, pkg)
+		pkgs = append(pkgs, code.QualifyPackagePath(pkg))
 	}
 
 	sort.Slice(pkgs, func(i, j int) bool {
@@ -299,4 +299,15 @@ func findCfgInDir(dir string) string {
 		}
 	}
 	return ""
+}
+
+func QualifyPackagePath(importPath string) string {
+	wd, _ := os.Getwd()
+
+	pkg, err := build.Import(importPath, wd, 0)
+	if err != nil {
+		return importPath
+	}
+
+	return pkg.ImportPath
 }
