@@ -2,11 +2,12 @@ package codegen
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"go/build"
 	"go/types"
-	"golang.org/x/tools/go/loader"
 	"os"
+
+	"github.com/pkg/errors"
+	"golang.org/x/tools/go/loader"
 )
 
 type Build struct {
@@ -182,7 +183,7 @@ func (cfg *Config) newLoaderWithoutErrors() loader.Config {
 }
 
 func resolvePkg(pkgName string) (string, error) {
-	cwd, _ := os.Getwd()
+	cwd, err := os.Executable()
 
 	pkg, err := build.Default.Import(pkgName, cwd, build.FindOnly)
 	if err != nil {

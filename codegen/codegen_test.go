@@ -17,6 +17,12 @@ func TestGenerateServer(t *testing.T) {
 	type User {
 		id: Int
 		fist_name: String
+		user_info: UserInfo
+	}
+
+	type UserInfo {
+		id: Int
+		fist_name: String
 	}
 `
 	serverFilename := "gen/" + name + "/server/server.go"

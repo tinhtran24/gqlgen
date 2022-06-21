@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"go/build"
 	"go/types"
 	"strconv"
 
@@ -92,8 +93,13 @@ func (s *Imports) Lookup(path string) string {
 		return existing.Alias
 	}
 
+	pkg, err := build.Default.Import(path, s.destDir, 0)
+	if err != nil {
+		panic(err)
+	}
+
 	imp := &Import{
-		Name: code.NameForPackage(path),
+		Name: pkg.Name,
 		Path: path,
 	}
 	s.imports = append(s.imports, imp)
