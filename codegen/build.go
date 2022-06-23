@@ -7,7 +7,6 @@ import (
 	"go/types"
 	"os"
 
-	"github.com/pkg/errors"
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/packages"
 )
@@ -48,16 +47,11 @@ type ServerBuild struct {
 func (cfg *Config) models() (*ModelBuild, error) {
 	namedTypes := cfg.buildNamedTypes()
 
-	progLoader := cfg.newLoaderWithoutErrors()
+	pkgs := cfg.getPackage()
 
-	prog, err := progLoader.Load()
-	if err != nil {
-		return nil, errors.Wrap(err, "loading failed")
-	}
+	cfg.bindTypes(namedTypes, cfg.Model.Dir(), pkgs)
 
-	cfg.bindTypes(namedTypes, cfg.Model.Dir(), prog)
-
-	models, err := cfg.buildModels(namedTypes, prog)
+	models, err := cfg.buildModels(namedTypes, pkgs)
 	if err != nil {
 		return nil, err
 	}
@@ -73,23 +67,20 @@ func (cfg *Config) resolver() (*ResolverBuild, error) {
 	progLoader := cfg.newLoaderWithoutErrors()
 	progLoader.Import(cfg.Resolver.ImportPath())
 
-	prog, err := progLoader.Load()
-	if err != nil {
-		return nil, err
-	}
+	pkgs := cfg.getPackage()
 
 	destDir := cfg.Resolver.Dir()
 
 	namedTypes := cfg.buildNamedTypes()
 
-	cfg.bindTypes(namedTypes, destDir, prog)
+	cfg.bindTypes(namedTypes, destDir, pkgs)
 
-	objects, err := cfg.buildObjects(namedTypes, prog)
+	objects, err := cfg.buildObjects(namedTypes, pkgs)
 	if err != nil {
 		return nil, err
 	}
 
-	def, _ := findGoType(prog, cfg.Resolver.ImportPath(), cfg.Resolver.Type)
+	def, _ := findGoType(pkgs, cfg.Resolver.ImportPath(), cfg.Resolver.Type)
 	resolverFound := def != nil
 
 	return &ResolverBuild{
@@ -112,20 +103,16 @@ func (cfg *Config) server(destDir string) *ServerBuild {
 func (cfg *Config) bind() (*Build, error) {
 	namedTypes := cfg.buildNamedTypes()
 
-	progLoader := cfg.newLoaderWithoutErrors()
-	prog, err := progLoader.Load()
-	if err != nil {
-		return nil, errors.Wrap(err, "loading failed")
-	}
+	pkgs := cfg.getPackage()
 
-	cfg.bindTypes(namedTypes, cfg.Exec.Dir(), prog)
+	cfg.bindTypes(namedTypes, cfg.Exec.Dir(), pkgs)
 
-	objects, err := cfg.buildObjects(namedTypes, prog)
+	objects, err := cfg.buildObjects(namedTypes, pkgs)
 	if err != nil {
 		return nil, err
 	}
 
-	inputs, err := cfg.buildInputs(namedTypes, prog)
+	inputs, err := cfg.buildInputs(namedTypes, pkgs)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +124,7 @@ func (cfg *Config) bind() (*Build, error) {
 	b := &Build{
 		PackageName:    cfg.Exec.Package,
 		Objects:        objects,
-		Interfaces:     cfg.buildInterfaces(namedTypes, prog),
+		Interfaces:     cfg.buildInterfaces(namedTypes, pkgs),
 		Inputs:         inputs,
 		SchemaRaw:      cfg.SchemaStr,
 		SchemaFilename: cfg.SchemaFilename,
@@ -185,6 +172,14 @@ func (cfg *Config) newLoaderWithErrors() loader.Config {
 		conf.Import(val.PkgPath)
 	}
 	return conf
+}
+
+func (cfg *Config) getPackage() []*packages.Package {
+	pkgs, err := packages.Load(&packages.Config{Mode: mode}, cfg.Models.referencedPackages()...)
+	if err != nil {
+		return []*packages.Package{}
+	}
+	return pkgs
 }
 
 func (cfg *Config) newLoaderWithoutErrors() loader.Config {

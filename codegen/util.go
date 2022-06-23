@@ -2,16 +2,17 @@ package codegen
 
 import (
 	"fmt"
+	"github.com/tinhtran24/gqlgen/internal/code"
 	"go/types"
+	"golang.org/x/tools/go/packages"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
-	"golang.org/x/tools/go/loader"
 )
 
-func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Object, error) {
+func findGoType(pkgs []*packages.Package, pkgName string, typeName string) (types.Object, error) {
 	if pkgName == "" {
 		return nil, nil
 	}
@@ -24,14 +25,13 @@ func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Ob
 	if err != nil {
 		return nil, errors.Errorf("unable to resolve package for %s: %s\n", fullName, err.Error())
 	}
-
-	pkg := prog.Imported[pkgName]
+	pkg := getPkg(pkgName, pkgs)
 	if pkg == nil {
 		return nil, errors.Errorf("required package was not loaded: %s", fullName)
 	}
 
-	for astNode, def := range pkg.Defs {
-		if astNode.Name != typeName || def.Parent() == nil || def.Parent() != pkg.Pkg.Scope() {
+	for astNode, def := range pkg.TypesInfo.Defs {
+		if astNode.Name != typeName || def.Parent() == nil || def.Parent() != pkg.Types.Scope() {
 			continue
 		}
 		if astNode.Name == "Marshal"+typeName {
@@ -39,9 +39,9 @@ func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Ob
 		}
 		return def, nil
 	}
-	for astNode, def := range pkg.Defs {
+	for astNode, def := range pkg.TypesInfo.Defs {
 		// only look at defs in the top scope
-		if def == nil || def.Parent() == nil || def.Parent() != pkg.Pkg.Scope() {
+		if def == nil || def.Parent() == nil || def.Parent() != pkg.Types.Scope() {
 			continue
 		}
 
@@ -53,8 +53,17 @@ func findGoType(prog *loader.Program, pkgName string, typeName string) (types.Ob
 	return nil, errors.Errorf("unable to find type %s\n", fullName)
 }
 
-func findGoNamedType(prog *loader.Program, pkgName string, typeName string) (*types.Named, error) {
-	def, err := findGoType(prog, pkgName, typeName)
+func getPkg(find string, pkgs []*packages.Package) *packages.Package {
+	for _, p := range pkgs {
+		if code.NormalizeVendor(find) == code.NormalizeVendor(p.PkgPath) {
+			return p
+		}
+	}
+	return nil
+}
+
+func findGoNamedType(pkgs []*packages.Package, pkgName string, typeName string) (*types.Named, error) {
+	def, err := findGoType(pkgs, pkgName, typeName)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +79,8 @@ func findGoNamedType(prog *loader.Program, pkgName string, typeName string) (*ty
 	return namedType, nil
 }
 
-func findGoInterface(prog *loader.Program, pkgName string, typeName string) (*types.Interface, error) {
-	namedType, err := findGoNamedType(prog, pkgName, typeName)
+func findGoInterface(pkgs []*packages.Package, pkgName string, typeName string) (*types.Interface, error) {
+	namedType, err := findGoNamedType(pkgs, pkgName, typeName)
 	if err != nil {
 		return nil, err
 	}

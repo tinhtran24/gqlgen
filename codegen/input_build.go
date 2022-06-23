@@ -2,14 +2,14 @@ package codegen
 
 import (
 	"go/types"
+	"golang.org/x/tools/go/packages"
 	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/ast"
-	"golang.org/x/tools/go/loader"
 )
 
-func (cfg *Config) buildInputs(namedTypes NamedTypes, prog *loader.Program) (Objects, error) {
+func (cfg *Config) buildInputs(namedTypes NamedTypes, pkgs []*packages.Package) (Objects, error) {
 	var inputs Objects
 
 	for _, typ := range cfg.schema.Types {
@@ -20,7 +20,7 @@ func (cfg *Config) buildInputs(namedTypes NamedTypes, prog *loader.Program) (Obj
 				return nil, err
 			}
 
-			def, err := findGoType(prog, input.Package, input.GoType)
+			def, err := findGoType(pkgs, input.Package, input.GoType)
 			if err != nil {
 				return nil, errors.Wrap(err, "cannot find type")
 			}

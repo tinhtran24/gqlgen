@@ -1,13 +1,13 @@
 package codegen
 
 import (
+	"golang.org/x/tools/go/packages"
 	"sort"
 
 	"github.com/vektah/gqlparser/ast"
-	"golang.org/x/tools/go/loader"
 )
 
-func (cfg *Config) buildModels(types NamedTypes, prog *loader.Program) ([]Model, error) {
+func (cfg *Config) buildModels(types NamedTypes, pkgs []*packages.Package) ([]Model, error) {
 	var models []Model
 
 	for _, typ := range cfg.schema.Types {
@@ -32,7 +32,7 @@ func (cfg *Config) buildModels(types NamedTypes, prog *loader.Program) ([]Model,
 			}
 			model = cfg.obj2Model(obj)
 		case ast.Interface, ast.Union:
-			intf := cfg.buildInterface(types, typ, prog)
+			intf := cfg.buildInterface(types, typ, pkgs)
 			if intf.IsUserDefined {
 				continue
 			}
