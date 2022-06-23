@@ -2,17 +2,17 @@ package codegen
 
 import (
 	"go/types"
+	"golang.org/x/tools/go/packages"
 	"sort"
 
 	"github.com/vektah/gqlparser/ast"
-	"golang.org/x/tools/go/loader"
 )
 
-func (cfg *Config) buildInterfaces(types NamedTypes, prog *loader.Program) []*Interface {
+func (cfg *Config) buildInterfaces(types NamedTypes, pkgs []*packages.Package) []*Interface {
 	var interfaces []*Interface
 	for _, typ := range cfg.schema.Types {
 		if typ.Kind == ast.Union || typ.Kind == ast.Interface {
-			interfaces = append(interfaces, cfg.buildInterface(types, typ, prog))
+			interfaces = append(interfaces, cfg.buildInterface(types, typ, pkgs))
 		}
 	}
 
@@ -23,7 +23,7 @@ func (cfg *Config) buildInterfaces(types NamedTypes, prog *loader.Program) []*In
 	return interfaces
 }
 
-func (cfg *Config) buildInterface(types NamedTypes, typ *ast.Definition, prog *loader.Program) *Interface {
+func (cfg *Config) buildInterface(types NamedTypes, typ *ast.Definition, pkgs []*packages.Package) *Interface {
 	i := &Interface{NamedType: types[typ.Name]}
 
 	for _, implementor := range cfg.schema.GetPossibleTypes(typ) {
@@ -31,20 +31,20 @@ func (cfg *Config) buildInterface(types NamedTypes, typ *ast.Definition, prog *l
 
 		i.Implementors = append(i.Implementors, InterfaceImplementor{
 			NamedType:     t,
-			ValueReceiver: cfg.isValueReceiver(types[typ.Name], t, prog),
+			ValueReceiver: cfg.isValueReceiver(types[typ.Name], t, pkgs),
 		})
 	}
 
 	return i
 }
 
-func (cfg *Config) isValueReceiver(intf *NamedType, implementor *NamedType, prog *loader.Program) bool {
-	interfaceType, err := findGoInterface(prog, intf.Package, intf.GoType)
+func (cfg *Config) isValueReceiver(intf *NamedType, implementor *NamedType, pkgs []*packages.Package) bool {
+	interfaceType, err := findGoInterface(pkgs, intf.Package, intf.GoType)
 	if interfaceType == nil || err != nil {
 		return true
 	}
 
-	implementorType, err := findGoNamedType(prog, implementor.Package, implementor.GoType)
+	implementorType, err := findGoNamedType(pkgs, implementor.Package, implementor.GoType)
 	if implementorType == nil || err != nil {
 		return true
 	}

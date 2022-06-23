@@ -2,10 +2,10 @@ package codegen
 
 import (
 	"go/types"
+	"golang.org/x/tools/go/packages"
 	"strings"
 
 	"github.com/vektah/gqlparser/ast"
-	"golang.org/x/tools/go/loader"
 )
 
 // namedTypeFromSchema objects for every graphql type, including scalars. There should only be one instance of Type for each thing
@@ -27,12 +27,12 @@ func (cfg *Config) buildNamedTypes() NamedTypes {
 	return types
 }
 
-func (cfg *Config) bindTypes(namedTypes NamedTypes, destDir string, prog *loader.Program) {
+func (cfg *Config) bindTypes(namedTypes NamedTypes, destDir string, pkg []*packages.Package) {
 	for _, t := range namedTypes {
 		if t.Package == "" {
 			continue
 		}
-		def, _ := findGoType(prog, t.Package, "Marshal"+t.GoType)
+		def, _ := findGoType(pkg, t.Package, "Marshal"+t.GoType)
 		switch def := def.(type) {
 		case *types.Func:
 			sig := def.Type().(*types.Signature)

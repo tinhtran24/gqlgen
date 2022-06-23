@@ -1,15 +1,15 @@
 package codegen
 
 import (
+	"golang.org/x/tools/go/packages"
 	"log"
 	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/ast"
-	"golang.org/x/tools/go/loader"
 )
 
-func (cfg *Config) buildObjects(types NamedTypes, prog *loader.Program) (Objects, error) {
+func (cfg *Config) buildObjects(types NamedTypes, pkgs []*packages.Package) (Objects, error) {
 	var objects Objects
 
 	for _, typ := range cfg.schema.Types {
@@ -22,7 +22,7 @@ func (cfg *Config) buildObjects(types NamedTypes, prog *loader.Program) (Objects
 			return nil, err
 		}
 
-		def, err := findGoType(prog, obj.Package, obj.GoType)
+		def, err := findGoType(pkgs, obj.Package, obj.GoType)
 		if err != nil {
 			return nil, err
 		}
