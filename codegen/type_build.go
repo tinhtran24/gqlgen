@@ -32,13 +32,15 @@ func (cfg *Config) bindTypes(namedTypes NamedTypes, destDir string, pkg []*packa
 		if t.Package == "" {
 			continue
 		}
-		def, _ := findGoType(pkg, t.Package, "Marshal"+t.GoType)
-		switch def := def.(type) {
-		case *types.Func:
-			sig := def.Type().(*types.Signature)
-			cpy := t.Ref
-			t.Marshaler = &cpy
-			t.Package, t.GoType = pkgAndType(sig.Params().At(0).Type().String())
+		if t.IsUserDefined {
+			def, _ := findGoType(pkg, t.Package, t.GoType)
+			switch def := def.(type) {
+			case *types.Func:
+				sig := def.Type().(*types.Signature)
+				cpy := t.Ref
+				t.Marshaler = &cpy
+				t.Package, t.GoType = pkgAndType(sig.Params().At(0).Type().String())
+			}
 		}
 	}
 }
