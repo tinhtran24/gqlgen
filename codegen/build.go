@@ -2,10 +2,14 @@ package codegen
 
 import (
 	"fmt"
+	"github.com/tinhtran24/gqlgen/internal/util"
 	"go/build"
 	"go/parser"
 	"go/types"
+	"log"
+	"math/big"
 	"os"
+	"time"
 
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/packages"
@@ -106,8 +110,11 @@ func (cfg *Config) bind() (*Build, error) {
 	pkgs := cfg.getPackage()
 
 	cfg.bindTypes(namedTypes, cfg.Exec.Dir(), pkgs)
-
+	start := time.Now()
+	elapsed := time.Since(start)
 	objects, err := cfg.buildObjects(namedTypes, pkgs)
+	log.Printf("objects Binomial took %dms", elapsed.Nanoseconds()/1000)
+	util.Factorial(big.NewInt(100))
 	if err != nil {
 		return nil, err
 	}

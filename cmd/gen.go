@@ -2,8 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/tinhtran24/gqlgen/internal/util"
 	"io/ioutil"
+	"log"
+	"math/big"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tinhtran24/gqlgen/codegen"
@@ -50,8 +54,11 @@ var genCmd = cli.Command{
 			fmt.Fprintln(os.Stderr, "invalid config format: "+err.Error())
 			os.Exit(1)
 		}
-
+		start := time.Now()
+		elapsed := time.Since(start)
 		err = codegen.Generate(*config)
+		log.Printf("Binomial took %dms", elapsed.Nanoseconds()/1000)
+		util.Factorial(big.NewInt(100))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(2)

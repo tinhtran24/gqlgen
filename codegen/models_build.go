@@ -22,7 +22,6 @@ func (cfg *Config) buildModels(types NamedTypes, pkgs []*packages.Package) ([]Mo
 				continue
 			}
 			model = cfg.obj2Model(obj)
-			cfg.Objects = append(cfg.Objects, *obj)
 		case ast.InputObject:
 			obj, err := cfg.buildInput(types, typ)
 			if err != nil {

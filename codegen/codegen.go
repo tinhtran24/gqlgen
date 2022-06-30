@@ -1,11 +1,14 @@
 package codegen
 
 import (
+	"github.com/tinhtran24/gqlgen/internal/util"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"regexp"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tinhtran24/gqlgen/codegen/templates"
@@ -21,8 +24,11 @@ func Generate(cfg Config) error {
 
 	_ = syscall.Unlink(cfg.Exec.Filename)
 	_ = syscall.Unlink(cfg.Model.Filename)
-
+	start := time.Now()
+	elapsed := time.Since(start)
 	modelsBuild, err := cfg.models()
+	log.Printf("Binomial took %dms", elapsed.Nanoseconds()/1000)
+	util.Factorial(big.NewInt(100))
 	if err != nil {
 		return errors.Wrap(err, "model plan failed")
 	}
