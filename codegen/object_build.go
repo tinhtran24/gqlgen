@@ -11,29 +11,20 @@ import (
 
 func (cfg *Config) buildObjects(types NamedTypes, pkgs []*packages.Package) (Objects, error) {
 	var objects Objects
-
-	for _, typ := range cfg.schema.Types {
-		if typ.Kind != ast.Object {
-			continue
-		}
-
-		obj, err := cfg.buildObject(types, typ)
-		if err != nil {
-			return nil, err
-		}
-
+	objs := cfg.Objects
+	for _, obj := range objs {
 		def, err := findGoType(pkgs, obj.Package, obj.GoType)
 		if err != nil {
 			return nil, err
 		}
 		if def != nil {
-			for _, bindErr := range bindObject(def.Type(), obj, cfg.StructTag) {
+			for _, bindErr := range bindObject(def.Type(), &obj, cfg.StructTag) {
 				log.Println(bindErr.Error())
 				log.Println("  Adding resolver method")
 			}
 		}
 
-		objects = append(objects, obj)
+		objects = append(objects, &obj)
 	}
 
 	sort.Slice(objects, func(i, j int) bool {

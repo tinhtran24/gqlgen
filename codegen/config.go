@@ -114,8 +114,8 @@ type Config struct {
 	Resolver       PackageConfig     `yaml:"resolver,omitempty"`
 	Models         TypeMap           `yaml:"models,omitempty"`
 	StructTag      string            `yaml:"struct_tag,omitempty"`
-
-	FilePath string `yaml:"-"`
+	Objects        []Object          `yaml:"-"`
+	FilePath       string            `yaml:"-"`
 
 	schema *ast.Schema `yaml:"-"`
 }
