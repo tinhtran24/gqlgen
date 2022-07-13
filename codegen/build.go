@@ -64,9 +64,6 @@ func (cfg *Config) models() (*ModelBuild, error) {
 
 // bind a schema together with some code to generate a Build
 func (cfg *Config) resolver() (*ResolverBuild, error) {
-	progLoader := cfg.newLoaderWithoutErrors()
-	progLoader.Import(cfg.Resolver.ImportPath())
-
 	pkgs := cfg.getPackage()
 
 	destDir := cfg.Resolver.Dir()

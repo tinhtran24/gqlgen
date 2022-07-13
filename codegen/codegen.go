@@ -60,10 +60,6 @@ func Generate(cfg Config) error {
 		}
 	}
 
-	if err := cfg.validate(); err != nil {
-		return errors.Wrap(err, "validation failed")
-	}
-
 	return nil
 }
 
