@@ -73,7 +73,7 @@ func TestReferencedPackages(t *testing.T) {
 			},
 		}
 
-		pkgs := tm.referencedPackages()
+		pkgs := tm.ReferencedPackages()
 
 		assert.Equal(t, []string{"github.com/test", "github.com/otherpkg"}, pkgs)
 	})

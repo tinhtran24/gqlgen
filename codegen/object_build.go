@@ -1,7 +1,7 @@
 package codegen
 
 import (
-	"golang.org/x/tools/go/packages"
+	"go/types"
 	"log"
 	"sort"
 
@@ -9,7 +9,7 @@ import (
 	"github.com/vektah/gqlparser/ast"
 )
 
-func (cfg *Config) buildObjects(types NamedTypes, pkgs []*packages.Package) (Objects, error) {
+func (cfg *Config) buildObjects(types NamedTypes, pkgs *Packages) (Objects, error) {
 	var objects Objects
 
 	for _, typ := range cfg.schema.Types {
@@ -81,8 +81,24 @@ func sanitizeArgName(name string) string {
 	return name
 }
 
-func (cfg *Config) buildObject(types NamedTypes, typ *ast.Definition) (*Object, error) {
-	obj := &Object{NamedType: types[typ.Name]}
+func (cfg *Config) CopyModifiersFromAst(t *ast.Type, base types.Type) types.Type {
+	if t.Elem != nil {
+		return types.NewSlice(cfg.CopyModifiersFromAst(t.Elem, base))
+	}
+
+	var isInterface bool
+	if named, ok := base.(*types.Named); ok {
+		_, isInterface = named.Underlying().(*types.Interface)
+	}
+
+	if !isInterface && !t.NonNull {
+		return types.NewPointer(base)
+	}
+
+	return base
+}
+func (cfg *Config) buildObject(nameTypes NamedTypes, typ *ast.Definition) (*Object, error) {
+	obj := &Object{NamedType: nameTypes[typ.Name]}
 	typeEntry, entryExists := cfg.Models[typ.Name]
 
 	obj.ResolverInterface = &Ref{GoType: obj.GQLType + "Resolver"}
@@ -104,13 +120,13 @@ func (cfg *Config) buildObject(types NamedTypes, typ *ast.Definition) (*Object, 
 	obj.Satisfies = append(obj.Satisfies, typ.Interfaces...)
 
 	for _, intf := range cfg.schema.GetImplements(typ) {
-		obj.Implements = append(obj.Implements, types[intf.Name])
+		obj.Implements = append(obj.Implements, nameTypes[intf.Name])
 	}
 
 	for _, field := range typ.Fields {
 		if typ == cfg.schema.Query && field.Name == "__type" {
 			obj.Fields = append(obj.Fields, Field{
-				Type:           &Type{types["__Schema"], []string{modPtr}, ast.NamedType("__Schema", nil), nil},
+				Type:           &Type{nameTypes["__Schema"], []string{modPtr}, ast.NamedType("__Schema", nil), nil},
 				GQLName:        "__schema",
 				GoFieldType:    GoFieldMethod,
 				GoReceiverName: "ec",
@@ -122,13 +138,13 @@ func (cfg *Config) buildObject(types NamedTypes, typ *ast.Definition) (*Object, 
 		}
 		if typ == cfg.schema.Query && field.Name == "__schema" {
 			obj.Fields = append(obj.Fields, Field{
-				Type:           &Type{types["__Type"], []string{modPtr}, ast.NamedType("__Schema", nil), nil},
+				Type:           &Type{nameTypes["__Type"], []string{modPtr}, ast.NamedType("__Schema", nil), nil},
 				GQLName:        "__type",
 				GoFieldType:    GoFieldMethod,
 				GoReceiverName: "ec",
 				GoFieldName:    "introspectType",
 				Args: []FieldArgument{
-					{GQLName: "name", Type: &Type{types["String"], []string{}, ast.NamedType("String", nil), nil}, Object: &Object{}},
+					{GQLName: "name", Type: &Type{nameTypes["String"], []string{}, ast.NamedType("String", nil), nil}, Object: &Object{}},
 				},
 				Object: obj,
 			})
@@ -148,7 +164,7 @@ func (cfg *Config) buildObject(types NamedTypes, typ *ast.Definition) (*Object, 
 		for _, arg := range field.Arguments {
 			newArg := FieldArgument{
 				GQLName:   arg.Name,
-				Type:      types.getType(arg.Type),
+				Type:      nameTypes.getType(arg.Type),
 				Object:    obj,
 				GoVarName: sanitizeArgName(arg.Name),
 			}
@@ -169,7 +185,7 @@ func (cfg *Config) buildObject(types NamedTypes, typ *ast.Definition) (*Object, 
 
 		obj.Fields = append(obj.Fields, Field{
 			GQLName:       field.Name,
-			Type:          types.getType(field.Type),
+			Type:          nameTypes.getType(field.Type),
 			Args:          args,
 			Object:        obj,
 			GoFieldName:   goName,

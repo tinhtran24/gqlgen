@@ -2,7 +2,6 @@ package codegen
 
 import (
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"strings"
 
 	"github.com/vektah/gqlparser/ast"
@@ -13,7 +12,6 @@ func (cfg *Config) buildNamedTypes() NamedTypes {
 	types := map[string]*NamedType{}
 	for _, schemaType := range cfg.schema.Types {
 		t := namedTypeFromSchema(schemaType)
-
 		if userEntry, ok := cfg.Models[t.GQLType]; ok && userEntry.Model != "" {
 			t.IsUserDefined = true
 			t.Package, t.GoType = pkgAndType(userEntry.Model)
@@ -21,13 +19,12 @@ func (cfg *Config) buildNamedTypes() NamedTypes {
 			t.Package = "github.com/tinhtran24/gqlgen/graphql"
 			t.GoType = "String"
 		}
-
 		types[t.GQLType] = t
 	}
 	return types
 }
 
-func (cfg *Config) bindTypes(namedTypes NamedTypes, destDir string, pkg []*packages.Package) {
+func (cfg *Config) bindTypes(namedTypes NamedTypes, destDir string, pkg *Packages) {
 	for _, t := range namedTypes {
 		if t.Package == "" {
 			continue

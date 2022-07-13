@@ -2,13 +2,12 @@ package codegen
 
 import (
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"sort"
 
 	"github.com/vektah/gqlparser/ast"
 )
 
-func (cfg *Config) buildInterfaces(types NamedTypes, pkgs []*packages.Package) []*Interface {
+func (cfg *Config) buildInterfaces(types NamedTypes, pkgs *Packages) []*Interface {
 	var interfaces []*Interface
 	for _, typ := range cfg.schema.Types {
 		if typ.Kind == ast.Union || typ.Kind == ast.Interface {
@@ -23,7 +22,7 @@ func (cfg *Config) buildInterfaces(types NamedTypes, pkgs []*packages.Package) [
 	return interfaces
 }
 
-func (cfg *Config) buildInterface(types NamedTypes, typ *ast.Definition, pkgs []*packages.Package) *Interface {
+func (cfg *Config) buildInterface(types NamedTypes, typ *ast.Definition, pkgs *Packages) *Interface {
 	i := &Interface{NamedType: types[typ.Name]}
 
 	for _, implementor := range cfg.schema.GetPossibleTypes(typ) {
@@ -38,7 +37,7 @@ func (cfg *Config) buildInterface(types NamedTypes, typ *ast.Definition, pkgs []
 	return i
 }
 
-func (cfg *Config) isValueReceiver(intf *NamedType, implementor *NamedType, pkgs []*packages.Package) bool {
+func (cfg *Config) isValueReceiver(intf *NamedType, implementor *NamedType, pkgs *Packages) bool {
 	interfaceType, err := findGoInterface(pkgs, intf.Package, intf.GoType)
 	if interfaceType == nil || err != nil {
 		return true

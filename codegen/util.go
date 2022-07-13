@@ -2,17 +2,17 @@ package codegen
 
 import (
 	"fmt"
-	"github.com/tinhtran24/gqlgen/internal/code"
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/tinhtran24/gqlgen/internal/code"
+	"golang.org/x/tools/go/packages"
 )
 
-func findGoType(pkgs []*packages.Package, pkgName string, typeName string) (types.Object, error) {
+func findGoType(pkgs *Packages, pkgName string, typeName string) (types.Object, error) {
 	if pkgName == "" {
 		return nil, nil
 	}
@@ -20,10 +20,9 @@ func findGoType(pkgs []*packages.Package, pkgName string, typeName string) (type
 	if pkgName != "" && pkgName != "." {
 		fullName = pkgName + "." + typeName
 	}
-
-	pkg := getPkg(pkgName, pkgs)
+	pkg := pkgs.packages[pkgName]
 	if pkg == nil {
-		return nil, errors.Errorf("required package was not loaded: %s", fullName)
+		pkg = pkgs.Load(pkgName)
 	}
 
 	for astNode, def := range pkg.TypesInfo.Defs {
@@ -58,7 +57,7 @@ func getPkg(find string, pkgs []*packages.Package) *packages.Package {
 	return nil
 }
 
-func findGoNamedType(pkgs []*packages.Package, pkgName string, typeName string) (*types.Named, error) {
+func findGoNamedType(pkgs *Packages, pkgName string, typeName string) (*types.Named, error) {
 	def, err := findGoType(pkgs, pkgName, typeName)
 	if err != nil {
 		return nil, err
@@ -75,7 +74,7 @@ func findGoNamedType(pkgs []*packages.Package, pkgName string, typeName string) 
 	return namedType, nil
 }
 
-func findGoInterface(pkgs []*packages.Package, pkgName string, typeName string) (*types.Interface, error) {
+func findGoInterface(pkgs *Packages, pkgName string, typeName string) (*types.Interface, error) {
 	namedType, err := findGoNamedType(pkgs, pkgName, typeName)
 	if err != nil {
 		return nil, err

@@ -2,14 +2,13 @@ package codegen
 
 import (
 	"go/types"
-	"golang.org/x/tools/go/packages"
 	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/vektah/gqlparser/ast"
 )
 
-func (cfg *Config) buildInputs(namedTypes NamedTypes, pkgs []*packages.Package) (Objects, error) {
+func (cfg *Config) buildInputs(namedTypes NamedTypes, pkgs *Packages) (Objects, error) {
 	var inputs Objects
 
 	for _, typ := range cfg.schema.Types {

@@ -47,9 +47,7 @@ func (t Ref) PkgDot() string {
 	name := templates.CurrentImports.Lookup(t.Package)
 	if name == "" {
 		return ""
-
 	}
-
 	return name + "."
 }
 

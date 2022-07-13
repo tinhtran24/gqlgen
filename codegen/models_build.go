@@ -1,13 +1,12 @@
 package codegen
 
 import (
-	"golang.org/x/tools/go/packages"
 	"sort"
 
 	"github.com/vektah/gqlparser/ast"
 )
 
-func (cfg *Config) buildModels(types NamedTypes, pkgs []*packages.Package) ([]Model, error) {
+func (cfg *Config) buildModels(types NamedTypes, pkgs *Packages) ([]Model, error) {
 	var models []Model
 
 	for _, typ := range cfg.schema.Types {

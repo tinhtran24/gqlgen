@@ -37,7 +37,9 @@ func TestGenerateServer(t *testing.T) {
 	_ = syscall.Unlink(cfg.Resolver.Filename)
 	_ = syscall.Unlink(serverFilename)
 
-	err := Generate(cfg)
+	err := cfg.Init()
+
+	err = Generate(cfg)
 	require.NoError(t, err)
 
 	err = GenerateServer(cfg, serverFilename)

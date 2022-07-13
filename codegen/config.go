@@ -28,6 +28,29 @@ func DefaultConfig() *Config {
 	}
 }
 
+func (c *Config) packageList() []string {
+	pkgs := []string{
+		"github.com/tinhtran24/gqlgen/graphql",
+		"github.com/tinhtran24/gqlgen/graphql/introspection",
+	}
+	pkgs = append(pkgs, c.Models.ReferencedPackages()...)
+	return pkgs
+}
+
+func (c *Config) Init() error {
+	if c.Packages == nil {
+		c.Packages = &Packages{}
+	}
+	c.normalize()
+	// prefetch all packages in one big packages.Load call
+	c.Packages.LoadAll(c.packageList()...)
+	return nil
+}
+
+func (c *Config) ReloadAllPackages() {
+	c.Packages.ReloadAll(c.packageList()...)
+}
+
 // LoadConfigFromDefaultLocations looks for a config file in the current directory, and all parent directories
 // walking up the tree. The closest config file will be returned.
 func LoadConfigFromDefaultLocations() (*Config, error) {
@@ -116,8 +139,8 @@ type Config struct {
 	StructTag      string            `yaml:"struct_tag,omitempty"`
 	Objects        []Object          `yaml:"-"`
 	FilePath       string            `yaml:"-"`
-
-	schema *ast.Schema `yaml:"-"`
+	Packages       *Packages         `yaml:"-"`
+	schema         *ast.Schema       `yaml:"-"`
 }
 
 type PackageConfig struct {
@@ -197,9 +220,21 @@ func (c *PackageConfig) Check() error {
 	if strings.ContainsAny(c.Package, "./\\") {
 		return fmt.Errorf("package should be the output package name only, do not include the output filename")
 	}
-	if c.Filename != "" && !strings.HasSuffix(c.Filename, ".go") {
+	if c.Filename == "" {
+		return fmt.Errorf("filename must be specified")
+	}
+	if !strings.HasSuffix(c.Filename, ".go") {
 		return fmt.Errorf("filename should be path to a go source file")
 	}
+
+	c.Filename = abs(c.Filename)
+
+	// If Package is not set, first attempt to load the package at the output dir. If that fails
+	// fallback to just the base dir name of the output filename.
+	if c.Package == "" {
+		c.Package = NameForDir(c.Dir())
+	}
+
 	return nil
 }
 
@@ -239,7 +274,12 @@ func (tm TypeMap) Check() error {
 	return nil
 }
 
-func (tm TypeMap) referencedPackages() []string {
+func (tm TypeMap) UserDefined(typeName string) bool {
+	m, ok := tm[typeName]
+	return ok && len(m.Model) > 0
+}
+
+func (tm TypeMap) ReferencedPackages() []string {
 	var pkgs []string
 
 	for _, typ := range tm {
@@ -287,7 +327,6 @@ func findCfg() (string, error) {
 	if cfg == "" {
 		return "", os.ErrNotExist
 	}
-
 	return cfg, nil
 }
 
@@ -299,15 +338,4 @@ func findCfgInDir(dir string) string {
 		}
 	}
 	return ""
-}
-
-func QualifyPackagePath(importPath string) string {
-	wd, _ := os.Getwd()
-
-	pkg, err := build.Import(importPath, wd, 0)
-	if err != nil {
-		return importPath
-	}
-
-	return pkg.ImportPath
 }

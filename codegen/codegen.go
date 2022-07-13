@@ -1,20 +1,16 @@
 package codegen
 
 import (
-	"github.com/tinhtran24/gqlgen/internal/util"
-	"log"
-	"math/big"
-	"os"
-	"path/filepath"
-	"regexp"
-	"syscall"
-	"time"
-
 	"github.com/pkg/errors"
 	"github.com/tinhtran24/gqlgen/codegen/templates"
 	"github.com/vektah/gqlparser"
 	"github.com/vektah/gqlparser/ast"
 	"github.com/vektah/gqlparser/gqlerror"
+	"log"
+	"os"
+	"path/filepath"
+	"regexp"
+	"syscall"
 )
 
 func Generate(cfg Config) error {
@@ -24,11 +20,7 @@ func Generate(cfg Config) error {
 
 	_ = syscall.Unlink(cfg.Exec.Filename)
 	_ = syscall.Unlink(cfg.Model.Filename)
-	start := time.Now()
-	elapsed := time.Since(start)
 	modelsBuild, err := cfg.models()
-	log.Printf("Binomial took %dms", elapsed.Nanoseconds()/1000)
-	util.Factorial(big.NewInt(100))
 	if err != nil {
 		return errors.Wrap(err, "model plan failed")
 	}
@@ -37,7 +29,6 @@ func Generate(cfg Config) error {
 		if err = templates.RenderToFile("models.gotpl", cfg.Model.Filename, modelsBuild); err != nil {
 			return err
 		}
-
 		for _, model := range modelsBuild.Models {
 			modelCfg := cfg.Models[model.GQLType]
 			modelCfg.Model = cfg.Model.ImportPath() + "." + model.GoType

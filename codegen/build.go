@@ -2,17 +2,12 @@ package codegen
 
 import (
 	"fmt"
-	"github.com/tinhtran24/gqlgen/internal/util"
 	"go/build"
 	"go/parser"
 	"go/types"
-	"log"
-	"math/big"
-	"os"
-	"time"
-
 	"golang.org/x/tools/go/loader"
 	"golang.org/x/tools/go/packages"
+	"os"
 )
 
 type Build struct {
@@ -50,15 +45,14 @@ type ServerBuild struct {
 // Create a list of models that need to be generated
 func (cfg *Config) models() (*ModelBuild, error) {
 	namedTypes := cfg.buildNamedTypes()
-
-	pkgs := cfg.getPackage()
-
+	pkgs := cfg.Packages
 	cfg.bindTypes(namedTypes, cfg.Model.Dir(), pkgs)
-
 	models, err := cfg.buildModels(namedTypes, pkgs)
 	if err != nil {
 		return nil, err
 	}
+	cfg.ReloadAllPackages()
+
 	return &ModelBuild{
 		PackageName: cfg.Model.Package,
 		Models:      models,
@@ -68,10 +62,7 @@ func (cfg *Config) models() (*ModelBuild, error) {
 
 // bind a schema together with some code to generate a Build
 func (cfg *Config) resolver() (*ResolverBuild, error) {
-	progLoader := cfg.newLoaderWithoutErrors()
-	progLoader.Import(cfg.Resolver.ImportPath())
-
-	pkgs := cfg.getPackage()
+	pkgs := cfg.Packages
 
 	destDir := cfg.Resolver.Dir()
 
@@ -107,14 +98,11 @@ func (cfg *Config) server(destDir string) *ServerBuild {
 func (cfg *Config) bind() (*Build, error) {
 	namedTypes := cfg.buildNamedTypes()
 
-	pkgs := cfg.getPackage()
+	pkgs := cfg.Packages
 
 	cfg.bindTypes(namedTypes, cfg.Exec.Dir(), pkgs)
-	start := time.Now()
-	elapsed := time.Since(start)
+
 	objects, err := cfg.buildObjects(namedTypes, pkgs)
-	log.Printf("objects Binomial took %dms", elapsed.Nanoseconds()/1000)
-	util.Factorial(big.NewInt(100))
 	if err != nil {
 		return nil, err
 	}
@@ -160,18 +148,9 @@ func (cfg *Config) validate() error {
 	return err
 }
 
-var mode = packages.NeedName |
-	packages.NeedFiles |
-	packages.NeedImports |
-	packages.NeedTypes |
-	packages.NeedSyntax |
-	packages.NeedTypesInfo |
-	packages.NeedModule |
-	packages.NeedDeps
-
 func (cfg *Config) newLoaderWithErrors() loader.Config {
 	conf := loader.Config{ParserMode: parser.ParseComments}
-	pkgs, err := packages.Load(&packages.Config{Mode: mode}, cfg.Models.referencedPackages()...)
+	pkgs, err := packages.Load(&packages.Config{Mode: mode}, cfg.Models.ReferencedPackages()...)
 	if err != nil {
 		return conf
 	}
@@ -182,7 +161,7 @@ func (cfg *Config) newLoaderWithErrors() loader.Config {
 }
 
 func (cfg *Config) getPackage() []*packages.Package {
-	pkgs, err := packages.Load(&packages.Config{Mode: mode}, cfg.Models.referencedPackages()...)
+	pkgs, err := packages.Load(&packages.Config{Mode: mode}, cfg.Models.ReferencedPackages()...)
 	if err != nil {
 		return []*packages.Package{}
 	}
